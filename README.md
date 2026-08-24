@@ -1,6 +1,6 @@
 # UV Fotodedektor Olcum Arayuzu — Keithley 2636 + Adapter Box C 10
 
-Keithley 2636 SourceMeter'i GPIB (USB-3488A) uzerinden yoneten, UV
+Keithley 2636 SourceMeter'i **USB, LAN veya GPIB** uzerinden yoneten, UV
 fotodedektor karakterizasyonu icin hazirlanmis masaustu arayuz.
 
 **Ne yapar:**
@@ -69,11 +69,21 @@ denemenizi saglar. Buradaki her sey calisiyorsa kurulum tamamdir.
 
 ### 5. Cihazla calistirin
 
-USB-3488A'yi ve Keithley'i baglayip **`baslat.bat`** dosyasini calistirin,
-ardindan `Baglanti` sekmesinden `Kaynaklari tara` → `Bagla`.
+Keithley'i baglayip **`baslat.bat`** dosyasini calistirin, ardindan `Baglanti`
+sekmesinden `Kaynaklari tara` → `Bagla`.
 
-> GPIB surucusu (USB-3488A) ve VISA kutuphanesi ayrica kurulmalidir; 4PP
-> programinda kullandiginiz kurulum yeterlidir, yeniden kurmaniza gerek yoktur.
+> **Python icin ayrica bir VISA arayuzu gerekir.** LabVIEW'in calisiyor olmasi
+> yetmez; LabVIEW kendi surucusunu kullanir. Baglanti sekmesindeki
+> **🔍 VISA teshis** dugmesi neyin eksik oldugunu soyler.
+>
+> - **USB ile:** Keithley I/O Layer (KIOL) veya NI-VISA kurun (Python ile ayni
+>   bit genisliginde). Adres: `USB0::0x05E6::0x2636::<seri-no>::INSTR`
+> - **LAN ile:** surucu gerekmez — `pip install pyvisa-py`, VISA kutuphanesi
+>   alanina `@py`, kaynak `TCPIP0::<ip>::inst0::INSTR`
+> - **GPIB (USB-3488A) ile:** surucu + `pip install pyvisa-py gpib-ctypes`,
+>   VISA kutuphanesi `@py`, kaynak `GPIB0::26::INSTR`
+>
+> Ayrinti: [docs/hardware_setup.md](docs/hardware_setup.md) bolum 7.
 
 ### Linux / macOS
 
@@ -89,8 +99,8 @@ python run_gui.py                # cihazla
 | Belirti | Cozum |
 |---|---|
 | `'python' is not recognized` | Python PATH'e eklenmemis; Python'u “Add to PATH” isaretli olarak yeniden kurun |
-| `Could not locate a VISA implementation` | VISA kutuphanesi yok/gorunmuyor: NI-VISA, Keysight IO Libraries veya MCC VISA kurulu olmali (4PP icin kullandiginiz hangisiyse) |
-| `Kaynaklari tara` bos donuyor | USB-3488A kablosu/surucusu, cihazin acik olmasi ve GPIB adresi kontrol edilir (cihaz on paneli: `MENU → COMMUNICATION → GPIB`) |
+| `Could not locate a VISA implementation` | Bu PC'de VISA yok. **Baglanti → 🔍 VISA teshis** dugmesine basin, rapor hangi adimin eksik oldugunu soyler. Ozet: USB icin Keithley I/O Layer veya NI-VISA kurun; LAN icin `pip install pyvisa-py` + `@py` yeterlidir. Ayrinti: [docs/hardware_setup.md](docs/hardware_setup.md) bolum 7 |
+| `Kaynaklari tara` bos donuyor | Cihaz acik ve kablo takili mi? USB'de Keithley I/O Layer / NI-VISA kurulu mu? GPIB'de cihaz adresi dogru mu (`MENU → COMMUNICATION → GPIB`)? **🔍 VISA teshis** raporunu okuyun |
 | Birden fazla VISA kurulu, yanlisi kullaniliyor | Baglanti sekmesindeki **VISA kutuphanesi** alanina DLL yolunu yazin (orn. `C:\Windows\System32\visa64.dll`) |
 | `PyQt5` kurulamiyor | `pip install PySide6` yeterlidir; program otomatik olarak onu kullanir |
 | Grafik penceresi acilmiyor (Linux) | `sudo apt install libxcb-xinerama0 libgl1` |

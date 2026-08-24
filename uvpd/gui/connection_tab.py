@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..config import load_wiring
 from ..instrument import CURRENT_RANGES, Keithley2636
 from ..qtcompat import QtCore, QtWidgets
+from ..visa_diag import BACKEND_PY, diagnose, try_backend
 from .session import Session
 from .widgets import FormBuilder, group, message
 
@@ -37,10 +38,14 @@ class ConnectionTab(QtWidgets.QWidget):
 
         btn_row = QtWidgets.QHBoxLayout()
         self.btn_scan = QtWidgets.QPushButton("Kaynaklari tara")
+        self.btn_diag = QtWidgets.QPushButton("🔍 VISA teshis")
+        self.btn_diag.setToolTip(
+            "VISA/GPIB kurulumunu tarar ve 'Could not locate a VISA "
+            "implementation' gibi hatalarin sebebini bildirir.")
         self.btn_connect = QtWidgets.QPushButton("Bagla")
         self.btn_disconnect = QtWidgets.QPushButton("Baglantiyi kes")
         self.btn_disconnect.setEnabled(False)
-        for b in (self.btn_scan, self.btn_connect, self.btn_disconnect):
+        for b in (self.btn_scan, self.btn_diag, self.btn_connect, self.btn_disconnect):
             btn_row.addWidget(b)
         btn_row.addStretch(1)
         holder = QtWidgets.QWidget()
@@ -142,6 +147,7 @@ class ConnectionTab(QtWidgets.QWidget):
 
         # ---------------- baglantilar ----------------
         self.btn_scan.clicked.connect(self._scan)
+        self.btn_diag.clicked.connect(self._diagnose)
         self.btn_connect.clicked.connect(self._connect)
         self.btn_disconnect.clicked.connect(self.session.disconnect_instrument)
         self.btn_output_off.clicked.connect(self._output_off)
@@ -183,19 +189,20 @@ class ConnectionTab(QtWidgets.QWidget):
 
     # ------------------------------------------------------------------
     def _scan(self) -> None:
-        try:
-            if self.simulate.isChecked():
-                found = ["SIM::UVPD::INSTR"]
-            else:
-                found = Keithley2636.list_resources(self.visa_lib.text().strip())
-        except Exception as exc:
-            message(self, "VISA hatasi",
-                    f"Kaynaklar taranamadi:\n{exc}\n\n"
-                    "GPIB surucusunun (USB-3488A) ve VISA kutuphanesinin "
-                    "kurulu oldugundan emin olun.", "error")
-            return
+        if self.simulate.isChecked():
+            found = ["SIM::UVPD::INSTR"]
+        else:
+            library = self.visa_lib.text().strip()
+            try:
+                found = Keithley2636.list_resources(library)
+            except Exception as exc:
+                self._scan_failed(exc, library)
+                return
         if not found:
-            message(self, "Kaynak yok", "Hicbir VISA kaynagi bulunamadi.", "warn")
+            message(self, "Kaynak yok",
+                    "Hicbir VISA kaynagi bulunamadi.\n\n"
+                    "Cihaz acik ve kablo takili mi? Ayrintili teshis icin "
+                    "'VISA teshis' dugmesini kullanin.", "warn")
             return
         current = self.resource.currentText()
         self.resource.clear()
@@ -204,16 +211,109 @@ class ConnectionTab(QtWidgets.QWidget):
             self.resource.setCurrentText(current)
         self.session.log(f"Bulunan kaynaklar: {', '.join(found)}")
 
+    def _scan_failed(self, exc: Exception, library: str) -> None:
+        """Tarama basarisiz: otomatik yedek backend dene, olmazsa teshise yonlendir."""
+        self.session.log(f"VISA hatasi ({library or 'sistem VISA'}): {exc}")
+
+        # Sistem VISA yoksa pyvisa-py ile otomatik olarak bir kez dene
+        if not library:
+            ok, result = try_backend(BACKEND_PY)
+            if ok and result:
+                self.visa_lib.setText(BACKEND_PY)
+                self.resource.clear()
+                self.resource.addItems([str(r) for r in result])
+                self.session.log(
+                    f"Sistem VISA bulunamadi; pyvisa-py (@py) ile devam edildi. "
+                    f"Bulunan kaynaklar: {', '.join(str(r) for r in result)}")
+                message(self, "pyvisa-py kullaniliyor",
+                        "Sistem VISA kutuphanesi bulunamadi, ancak pyvisa-py "
+                        "calisti ve kaynaklari listeledi.\n\n"
+                        "'VISA kutuphanesi' alani otomatik olarak @py yapildi.",
+                        "info")
+                return
+
+        box = QtWidgets.QMessageBox(self)
+        box.setWindowTitle("VISA hatasi")
+        box.setIcon(QtWidgets.QMessageBox.Critical)
+        box.setText("Kaynaklar taranamadi.")
+        box.setInformativeText(
+            f"{exc}\n\n"
+            "Bu hata, Python'un bir VISA kutuphanesi bulamadigi anlamina gelir. "
+            "LabVIEW calisiyor olsa bile Python ayri bir arayuze ihtiyac duyar.\n\n"
+            "Sebebini ogrenmek icin 'Teshisi calistir' dugmesine basin.")
+        run_diag = box.addButton("Teshisi calistir", QtWidgets.QMessageBox.AcceptRole)
+        box.addButton("Kapat", QtWidgets.QMessageBox.RejectRole)
+        box.exec_() if hasattr(box, "exec_") else box.exec()
+        if box.clickedButton() is run_diag:
+            self._diagnose()
+
+    def _diagnose(self) -> None:
+        """VISA teshis raporunu diyalogda gosterir."""
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        try:
+            report = diagnose()
+        finally:
+            QtWidgets.QApplication.restoreOverrideCursor()
+        self.session.log("VISA teshisi calistirildi.")
+
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle("VISA / GPIB teshisi")
+        dlg.resize(760, 560)
+        lay = QtWidgets.QVBoxLayout(dlg)
+
+        view = QtWidgets.QPlainTextEdit(report.text)
+        view.setReadOnly(True)
+        view.setStyleSheet("font-family:monospace; font-size:11px;")
+        lay.addWidget(view, 1)
+
+        row = QtWidgets.QHBoxLayout()
+        btn_copy = QtWidgets.QPushButton("Panoya kopyala")
+        btn_copy.clicked.connect(
+            lambda: QtWidgets.QApplication.clipboard().setText(report.text))
+        row.addWidget(btn_copy)
+        if report.recommended_library is not None:
+            label = report.recommended_library or "(bos = sistem VISA)"
+            btn_apply = QtWidgets.QPushButton(f"Oneriyi uygula: {label}")
+            btn_apply.setStyleSheet("font-weight:700;")
+
+            def apply_suggestion():
+                self.visa_lib.setText(report.recommended_library)
+                if report.working_resources:
+                    self.resource.clear()
+                    self.resource.addItems([str(r) for r in report.working_resources])
+                self._push()
+                self.session.log(
+                    f"VISA kutuphanesi '{report.recommended_library or 'sistem'}' "
+                    "olarak ayarlandi.")
+                dlg.accept()
+
+            btn_apply.clicked.connect(apply_suggestion)
+            row.addWidget(btn_apply)
+        row.addStretch(1)
+        btn_close = QtWidgets.QPushButton("Kapat")
+        btn_close.clicked.connect(dlg.reject)
+        row.addWidget(btn_close)
+        holder = QtWidgets.QWidget()
+        holder.setLayout(row)
+        lay.addWidget(holder)
+
+        dlg.exec_() if hasattr(dlg, "exec_") else dlg.exec()
+
     def _connect(self) -> None:
         self._push()
         resource = self.resource.currentText().strip()
+        library = self.visa_lib.text().strip()
         try:
             idn = self.session.connect_instrument(
                 resource, simulate=self.simulate.isChecked(),
-                visa_library=self.visa_lib.text().strip())
+                visa_library=library)
         except Exception as exc:
+            hint = ""
+            if "locate a VISA" in str(exc) or "VisaLibraryError" in type(exc).__name__:
+                hint = ("\n\nVISA kutuphanesi bulunamadi. 'VISA teshis' dugmesi "
+                        "sebebini ve cozumu gosterir.")
             message(self, "Baglanti hatasi",
-                    f"{resource} adresine baglanilamadi:\n\n{exc}", "error")
+                    f"{resource} adresine baglanilamadi:\n\n{exc}{hint}", "error")
             return
         self.idn_label.setText(idn)
 

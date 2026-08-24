@@ -1,8 +1,8 @@
 # Donanim kurulumu ve kablolama
 
 Bu belge fotograflardaki duzene gore hazirlanmistir:
-Keithley 2636 (SourceMeter) → USB-3488A USB/GPIB arabirimi → PC,
-ve Keithley → Adapter Box C 10 → prob istasyonu (numune).
+Keithley 2636 (SourceMeter) → PC (USB, LAN veya USB-3488A GPIB arabirimi ile;
+bkz. bolum 7), ve Keithley → Adapter Box C 10 → prob istasyonu (numune).
 
 > **Kurulu duzen:** Bolum 4'teki BNC baglantisi laboratuvarda kurulu ve
 > LabVIEW ile dogrulanmis durumdadir; `config/wiring.json` bu duzeni icerir ve
@@ -180,17 +180,51 @@ Program, olcum baslatmadan once Baglanti sekmesindeki
 
 ---
 
-## 7. GPIB baglantisi (USB-3488A)
+## 7. PC baglantisi: USB, LAN veya GPIB
 
-1. USB-3488A surucusunu ve VISA kutuphanesini kurun (4PP programinda zaten
-   kullandiginiz kurulum yeterlidir).
-2. Keithley 2636 on panelinden GPIB adresini kontrol edin
+Program uc baglanti yolunu da destekler. Ortak sart: Python'un bir **VISA**
+arayuzu bulabilmesi. LabVIEW'in calisiyor olmasi yetmez — LabVIEW kendi
+surucusunu kullanir, Python ayri bir VISA katmanina ihtiyac duyar.
+
+> Takildiginizda: **Baglanti → 🔍 VISA teshis** dugmesi sistemi tarar ve hangi
+> adimin eksik oldugunu soyler. Ayni raporu konsoldan da alabilirsiniz:
+> `python -m uvpd.visa_diag`
+
+### a) USB (en pratik)
+
+1. Bir VISA runtime kurun — ikisinden biri yeterlidir:
+   - **Keithley I/O Layer (KIOL)** — Tektronix/Keithley sitesinden, cihaza ozel,
+     onerilen
+   - **NI-VISA** — ni.com, ucretsiz
+   Kurulum, Python ile **ayni bit genisliginde** olmalidir (64-bit Python →
+   64-bit VISA). Kurulumdan sonra bilgisayari yeniden baslatin.
+2. Cihazi USB (tip B) kablosuyla PC'ye baglayin.
+3. Programda **Kaynaklari tara** → adres su bicimde gorunur:
+   `USB0::0x05E6::0x2636::<seri-no>::INSTR`
+
+### b) LAN (surucu kurmadan)
+
+VISA runtime kurmak istemiyorsaniz LAN yolu saf Python ile calisir:
+
+```bat
+pip install pyvisa-py
+```
+
+- Cihazin IP adresini on panelden okuyun: `MENU → LAN → STATUS → IP-ADDRESS`
+- Programda **VISA kutuphanesi** alanina `@py` yazin
+- **VISA kaynagi** alanina elle girin: `TCPIP0::<ip>::inst0::INSTR`
+
+### c) GPIB (USB-3488A)
+
+1. USB-3488A surucusunu kurun (NI-488.2 uyumlu `gpib-32.dll` saglar).
+2. Cihazin GPIB adresini kontrol edin
    (`MENU → COMMUNICATION → GPIB → ADDRESS`), fabrika degeri **26**.
-3. Arabirim `GPIB0` ise VISA kaynak adresi: `GPIB0::26::INSTR`.
-4. Programda **Baglanti → Kaynaklari tara** ile adresi dogrulayabilirsiniz.
+3. Sistemde VISA yoksa: `pip install pyvisa-py gpib-ctypes`, VISA kutuphanesi
+   alanina `@py`.
+4. Kaynak adresi: `GPIB0::26::INSTR`
 
-Alternatifler: cihazin LAN portu (`TCPIP0::<ip>::inst0::INSTR`) veya
-USB (`USB0::0x05E6::0x2636::INSTR`) — program her ucunu de destekler.
+> USB-3488A bir National Instruments karti degildir; NI-VISA onu goremeyebilir.
+> Bu durumda (c) adimindaki `@py` yolunu kullanin.
 
 ---
 
