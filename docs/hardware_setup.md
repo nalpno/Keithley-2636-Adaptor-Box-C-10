@@ -106,20 +106,38 @@ koluna/PCB pedine de kenetlenebilir.
 
 ---
 
-## 4. Onerilen baglanti — 2 uclu (local sense) fotodedektor
+## 4. Kurulu duzen — 2 uclu (local sense), BNC uzerinden
 
-Iki terminalli bir UV fotodedektor icin en pratik duzen:
+Laboratuvarda kurulu ve LabVIEW ile dogrulanmis baglanti:
+
+| Keithley 2636 (Kanal A) | 2600-ALG-2 klipsi | Adapter Box C 10 | Numune |
+|---|---|---|---|
+| **HI** merkez iletken | 🔴 kirmizi | `BNC1` merkez | Prob 1 → 1. kontak |
+| **LO** merkez iletken | 🔴 kirmizi | `BNC2` merkez | Prob 2 → 2. kontak |
+| Dis ekran (sasi) | 🟢 yesil | `CASE` | Hucre govdesi |
+| **GUARD** (ic ekran) | ⚫ siyah | baglanmaz | yalitilmis, havada |
+
+- Yesil klips **yalnizca tek kablodan** CASE'e baglanir; iki kablodan da
+  baglanirsa toprak dongusu olusur ve gurultu artar.
+- BNC merkez–govde ciftinde guard hatti tasinmaz. nA ve ustu fotoakimlar icin
+  sorun degil; pA seviyesine inilecekse triaks–triaks kablo (7078-TRX serisi)
+  ile `TRX1`/`TRX2` uzerinden baglanmalidir.
+- Gerilim isareti: programda +V uygulandiginda `BNC1` ucu `BNC2`'ye gore
+  pozitif olur. Akimin isareti beklenenin tersi cikarsa BNC1/BNC2 kablolarini
+  yer degistirin.
+- Bu duzende Baglanti sekmesinde **4 uclu (remote sense) kapali** olmalidir —
+  SENSE uclari bagli olmadigi icin acik birakilirsa cihaz hatali okur.
+
+### Triaks uzerinden alternatif (dusuk akim icin)
 
 | Keithley 2636 | Kablo | Adapter Box C 10 | Numune |
 |---|---|---|---|
-| Kanal A **HI** | 2600-ALG-2 | `TRX1` | Prob 1 → ust kontak (anot) |
-| Kanal A **LO** | 2600-ALG-2 | `TRX2` | Prob 2 → alt kontak (katot) |
+| Kanal A **HI** | triaks–triaks | `TRX1` | Prob 1 → ust kontak (anot) |
+| Kanal A **LO** | triaks–triaks | `TRX2` | Prob 2 → alt kontak (katot) |
 | Sasi / toprak | muz kablo | `CASE` | Hucre govdesi |
 
 Hucre icindeki PCB uzerinde `TRX1`, `TRX2` … olarak isaretli pedler,
 fotograftaki kisa jumper kablolarla ilgili prob koluna baglanir.
-
-Bu duzende Baglanti sekmesinde **4 uclu (remote sense) kapali** olmalidir.
 
 ## 5. 4 uclu (remote sense) olcum
 

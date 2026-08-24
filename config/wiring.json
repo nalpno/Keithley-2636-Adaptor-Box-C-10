@@ -1,47 +1,48 @@
 {
-  "aciklama": "Keithley 2636 <-> Adapter Box C 10 kablolama haritasi. Kendi duzeninize gore duzenleyin; program bu tabloyu Baglanti sekmesinde gosterir.",
+  "aciklama": "Keithley 2636 <-> Adapter Box C 10 kablolama haritasi — laboratuvarda kurulu ve LabVIEW ile dogrulanmis duzen. Degistirirseniz bu dosyayi guncelleyin; program bu tabloyu Baglanti sekmesinde gosterir.",
+  "olcum_tipi": "2 uclu (local sense), Kanal A",
   "baglantilar": [
     {
-      "smu": "Kanal A FORCE HI (triax)",
-      "kablo": "2600-ALG-2",
-      "kutu": "TRX1",
-      "uc": "Prob 1 (numune ust kontak)",
-      "not": "Merkez iletken = FORCE/HI, ic ekran = GUARD, dis ekran = LO/sasi"
+      "smu": "Kanal A HI (triax merkez)",
+      "kablo": "2600-ALG-2 kirmizi klips",
+      "kutu": "BNC1 merkez",
+      "uc": "Prob 1 — numune 1. kontak",
+      "not": "Kaynak/olcum yuksek ucu. Gerilim isareti buna gore: +V => HI, LO'ya gore pozitif"
     },
     {
-      "smu": "Kanal A LO (triax)",
-      "kablo": "2600-ALG-2",
-      "kutu": "TRX2",
-      "uc": "Prob 2 (numune alt/karsi kontak)",
-      "not": "2 uclu (local sense) olcum icin yeterli"
+      "smu": "Kanal A LO (triax merkez)",
+      "kablo": "2600-ALG-2 kirmizi klips",
+      "kutu": "BNC2 merkez",
+      "uc": "Prob 2 — numune 2. kontak",
+      "not": "Akim donus yolu"
     },
     {
-      "smu": "Kanal A SENSE HI",
-      "kablo": "triax",
-      "kutu": "TRX4",
-      "uc": "Prob 3",
-      "not": "Yalnizca 4 uclu (remote sense) olcumde kullanin"
-    },
-    {
-      "smu": "Kanal A SENSE LO",
-      "kablo": "triax",
-      "kutu": "TRX5",
-      "uc": "Prob 4",
-      "not": "Yalnizca 4 uclu olcumde kullanin"
-    },
-    {
-      "smu": "Kanal B (opsiyonel)",
-      "kablo": "2600-ALG-2",
-      "kutu": "TRX3 / B3-B4",
-      "uc": "Ikinci numune veya kapi (gate)",
-      "not": "Iki terminalli fotodedektor icin gerekli degil"
-    },
-    {
-      "smu": "Sasi / toprak",
-      "kablo": "muz kablo",
+      "smu": "Kanal A dis ekran (sasi)",
+      "kablo": "2600-ALG-2 yesil klips",
       "kutu": "CASE",
       "uc": "Olcum hucresi govdesi",
-      "not": "Dusuk akim olcumlerinde gurultuyu azaltir"
+      "not": "Ekran topraklamasi. Toprak dongusunu onlemek icin YALNIZCA tek kablodan baglanir"
+    },
+    {
+      "smu": "Kanal A GUARD (ic ekran)",
+      "kablo": "2600-ALG-2 siyah klips",
+      "kutu": "— (baglanmaz)",
+      "uc": "Yalitilmis, havada",
+      "not": "GUARD, HI ile ayni gerilimde surulen bir cikistir. LO'ya, yesile, BNC govdesine veya numuneye ASLA degdirmeyin. BNC ile guard tasinmadigi icin kablo sizintisi triaks baglantiya gore yuksektir (pA seviyesi gerekiyorsa triaks-triaks kabloya gecin)"
+    },
+    {
+      "smu": "Kanal A SENSE HI / SENSE LO",
+      "kablo": "triaks",
+      "kutu": "— (kullanilmiyor)",
+      "uc": "Prob 3 / Prob 4",
+      "not": "Yalnizca 4 uclu (remote sense) olcumde baglanir; bu duzende programda '4 uclu' kutucugu KAPALI kalmalidir"
+    },
+    {
+      "smu": "Kanal B",
+      "kablo": "2600-ALG-2",
+      "kutu": "— (kullanilmiyor)",
+      "uc": "Ikinci numune veya kapi (gate)",
+      "not": "Iki terminalli fotodedektor icin gerekli degil"
     },
     {
       "smu": "Interlock",
