@@ -1,0 +1,15 @@
+# UV fotodedektor olcum arayuzu - bagimliliklar
+# Kurulum:  pip install -r requirements.txt
+
+numpy>=1.22
+matplotlib>=3.5
+pyvisa>=1.13
+
+# Qt arayuzu: ikisinden biri yeterlidir (program once PyQt5'i dener).
+PyQt5>=5.15
+# PySide6>=6.4
+
+# --- opsiyonel ---
+# pyvisa-py>=0.7        # VISA kutuphanesi olarak "@py" kullanmak icin
+#                       # (GPIB icin ayrica linux-gpib/gpib-ctypes gerekir)
+# pytest>=7.0           # testleri calistirmak icin
