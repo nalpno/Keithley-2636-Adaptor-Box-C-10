@@ -4,11 +4,14 @@ Bu belge fotograflardaki duzene gore hazirlanmistir:
 Keithley 2636 (SourceMeter) → USB-3488A USB/GPIB arabirimi → PC,
 ve Keithley → Adapter Box C 10 → prob istasyonu (numune).
 
-> **Onemli:** Adapter Box C 10'un ic baglantilari (on panel konnektoru → hucre
-> icindeki PCB pedi) kutuya ozeldir. Ilk kurulumda **her hattin surekliligini
-> multimetre ile dogrulayin** (gerilim uygulamadan once). Asagidaki tablo
-> onerilen bir duzendir; kendi kutunuza gore `config/wiring.json` dosyasini
-> guncelleyin, program bu dosyayi Baglanti sekmesinde gosterir.
+> **Kurulu duzen:** Bolum 4'teki BNC baglantisi laboratuvarda kurulu ve
+> LabVIEW ile dogrulanmis durumdadir; `config/wiring.json` bu duzeni icerir ve
+> program onu Baglanti sekmesinde gosterir. Kablolamayi degistirirseniz o
+> dosyayi da guncelleyin.
+>
+> Adapter Box C 10'un ic baglantilari (on panel konnektoru → hucre icindeki PCB
+> pedi) kutuya ozeldir. Yeni bir hat kullanmadan once **surekliligini
+> multimetre ile dogrulayin** (gerilim uygulamadan once).
 
 ---
 
@@ -34,14 +37,16 @@ Fotograftaki on panelde su uclar bulunur:
 |---|---|---|
 | Muz (banana) jaklar | `B1 … B8` | Dusuk frekansli / DC baglantilar, isitici, termocift vb. |
 | Triaks | `TRX1 … TRX6` | **SMU baglantilari** (dusuk akim, guard'li) |
-| BNC | `BNC1`, `BNC2` (ikiser adet) | Osiloskop / darbe kaynagi |
+| BNC | `BNC1`, `BNC2` (ikiser adet) | **Kullanimda:** Kanal A HI / LO (bkz. bolum 4) |
 | SMA | `SMA1 … SMA4` | Yuksek frekans |
 | `CASE` | kirmizi muz | Hucre govdesi / ekran toprak |
 | `VAKUUM` | pnomatik hizli baglanti | Numune tutucu vakumu |
 | `INTERLOCK` | DB9 | Kapak/guvenlik devresi |
 
-UV fotodedektor olcumleri icin **triaks (TRX) uclari** kullanilmalidir: pA–nA
-seviyesindeki fotoakimlar ancak guard'li triaks hatlarla gurultusuz olcusur.
+Mevcut kurulumda numune `BNC1`/`BNC2` uzerinden baglidir (bolum 4). pA
+seviyesindeki karanlik akimlar olculecekse guard hattini numuneye kadar tasiyan
+**triaks (TRX) uclarina** gecilmelidir; nA ve ustundeki fotoakimlar icin BNC
+baglantisi yeterlidir.
 
 ---
 
