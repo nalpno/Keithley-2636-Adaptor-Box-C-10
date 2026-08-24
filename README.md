@@ -20,21 +20,80 @@ fotodedektor karakterizasyonu icin hazirlanmis masaustu arayuz.
 
 ---
 
-## Kurulum
+## Kurulum (Windows — laboratuvar PC'si)
 
-```bash
+### 1. Python
+
+Kurulu degilse <https://www.python.org/downloads/> adresinden **Python 3.9+**
+kurun. Kurulum ekraninda **“Add python.exe to PATH”** kutucugunu isaretlemeyi
+unutmayin. Kontrol:
+
+```bat
+python --version
+```
+
+### 2. Programi indirin
+
+Git varsa:
+
+```bat
+git clone -b claude/inspiring-newton-m7ggeg https://github.com/nalpno/Keithley-2636-Adaptor-Box-C-10.git
+cd Keithley-2636-Adaptor-Box-C-10
+```
+
+Git yoksa: GitHub'da depo sayfasinda dal (branch) listesinden
+`claude/inspiring-newton-m7ggeg` secilir → **Code → Download ZIP** → indirilen
+dosya bir klasore cikarilir.
+
+### 3. Paketleri kurun
+
+Klasordeki **`kurulum.bat`** dosyasina cift tiklayin. Bu dosya:
+
+- `.venv` adinda yalitilmis bir Python ortami olusturur (sistem Python'unuzu
+  ve 4PP programini etkilemez),
+- `numpy`, `matplotlib`, `pyvisa`, `PyQt5` paketlerini kurar,
+- VISA/GPIB kurulumunu kontrol edip bulunan cihaz adreslerini yazar.
+
+Elle yapmak isterseniz:
+
+```bat
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-GPIB surucusu (USB-3488A) ve VISA kutuphanesi PC'de zaten kurulu olmalidir —
-4PP programinda kullandiginiz kurulum yeterlidir.
+### 4. Once simulasyonla deneyin
 
-## Calistirma
+**`baslat-simulasyon.bat`** — cihaz baglamadan arayuzu, taramayi ve analizleri
+denemenizi saglar. Buradaki her sey calisiyorsa kurulum tamamdir.
+
+### 5. Cihazla calistirin
+
+USB-3488A'yi ve Keithley'i baglayip **`baslat.bat`** dosyasini calistirin,
+ardindan `Baglanti` sekmesinden `Kaynaklari tara` → `Bagla`.
+
+> GPIB surucusu (USB-3488A) ve VISA kutuphanesi ayrica kurulmalidir; 4PP
+> programinda kullandiginiz kurulum yeterlidir, yeniden kurmaniza gerek yoktur.
+
+### Linux / macOS
 
 ```bash
-python run_gui.py              # normal kullanim
-python run_gui.py --simulate   # cihaz baglamadan deneme
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python run_gui.py --simulate     # deneme
+python run_gui.py                # cihazla
 ```
+
+### Kurulum sorunlari
+
+| Belirti | Cozum |
+|---|---|
+| `'python' is not recognized` | Python PATH'e eklenmemis; Python'u “Add to PATH” isaretli olarak yeniden kurun |
+| `Could not locate a VISA implementation` | VISA kutuphanesi yok/gorunmuyor: NI-VISA, Keysight IO Libraries veya MCC VISA kurulu olmali (4PP icin kullandiginiz hangisiyse) |
+| `Kaynaklari tara` bos donuyor | USB-3488A kablosu/surucusu, cihazin acik olmasi ve GPIB adresi kontrol edilir (cihaz on paneli: `MENU → COMMUNICATION → GPIB`) |
+| Birden fazla VISA kurulu, yanlisi kullaniliyor | Baglanti sekmesindeki **VISA kutuphanesi** alanina DLL yolunu yazin (orn. `C:\Windows\System32\visa64.dll`) |
+| `PyQt5` kurulamiyor | `pip install PySide6` yeterlidir; program otomatik olarak onu kullanir |
+| Grafik penceresi acilmiyor (Linux) | `sudo apt install libxcb-xinerama0 libgl1` |
 
 ---
 
@@ -146,6 +205,9 @@ da denetler.
 ## Proje yapisi
 
 ```
+kurulum.bat                Windows kurulum betigi
+baslat.bat                 programi calistirir
+baslat-simulasyon.bat      cihazsiz deneme modu
 run_gui.py                 arayuzu baslatir
 uvpd/
   instrument.py            Keithley 2636 TSP surucusu (pyvisa)
