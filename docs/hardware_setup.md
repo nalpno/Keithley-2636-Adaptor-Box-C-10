@@ -57,16 +57,52 @@ SENSE HI      HI      LO      SENSE LO          (GUARD = ic ekran)
 - **LO**: dusuk uc (donus yolu)
 - **SENSE HI / SENSE LO**: yalnizca 4 uclu (remote sense) olcumde kullanilir
 
-Elinizdeki **2600-ALG-2** kablolar (triaks → timsah agizli) tam bu is icindir.
-Kablo ucundaki iletkenler:
+Elinizdeki **2600-ALG-2** kablolar (triaks → uc timsah agizli) tam bu is icindir.
+Kablonun ucundan **kirmizi, siyah ve yesil** olmak uzere uc klips cikar:
 
-| Kablo ucu | Anlami | Nereye |
-|---|---|---|
-| Merkez iletken | FORCE / HI (veya LO) | Numune kontagi |
-| Ic ekran | GUARD | **Bagli birakilmaz**, kisa devre yapilmaz |
-| Dis ekran | Ekran / sasi | `CASE` veya kutu toprak |
+| Klips | Triaks iletkeni | Anlami | Nereye baglanir |
+|---|---|---|---|
+| 🔴 **Kirmizi** | merkez iletken | **FORCE / sinyal** (HI kablosunda HI, LO kablosunda LO) | Numune kontagi |
+| ⚫ **Siyah** | ic ekran | **GUARD** — surulen, HI ile ayni gerilimde | **Yalitilmis birakilir** (veya guard halkasina) |
+| 🟢 **Yesil** | dis ekran | Ekran / sasi toprak | `CASE` ucu — yalnizca **tek** noktadan |
 
-> GUARD ucunu asla HI veya LO'ya kisa devre etmeyin; SMU'yu zorlar.
+> ⚠️ **GUARD (siyah) klipsi kritik.** Guard pasif bir ekran degil, HI ile ayni
+> gerilimde surulen dusuk empedansli bir cikistir. LO'ya, yesil klipse,
+> toprağa veya numuneye **asla degdirmeyin** — SMU'yu zorlar ve olcumu bozar.
+> Kullanmayacaksaniz ucunu bantlayip yalitin, havada birakin.
+
+**Renkleri 30 saniyede dogrulayin:** kabloyu cihazdan sokun, multimetreyi
+sureklilik kademesine alin; triaks fisin **merkez pimi** ile kirmizi klips,
+**ic ekran** ile siyah, **dis govde** ile yesil arasinda sureklilik olmalidir.
+Farkli cikarsa asagidaki tum tarifleri kendi kablonuza gore uyarlayin.
+
+### Klipslerle numuneye baglama (2 uclu olcum)
+
+Iki adet 2600-ALG-2 ile:
+
+| Kablo | Kirmizi klips | Siyah klips (GUARD) | Yesil klips |
+|---|---|---|---|
+| Kanal A **HI**'dan gelen | Prob 1 / ust kontak | yalitilmis, havada | `CASE` (yalnizca bu kablodan) |
+| Kanal A **LO**'dan gelen | Prob 2 / alt kontak | yalitilmis, havada | bagli degil (toprak dongusu olmasin) |
+
+Kutunun on panelindeki muz jaklara (`B1`, `B2` …) baglayacaksaniz timsah
+agizlari muz kablonun metal govdesine kenetleyin; hucre icinde dogrudan prob
+koluna/PCB pedine de kenetlenebilir.
+
+> Triaks jaklara (`TRX1`, `TRX2`) baglanacaksa timsah agizli uc iş gormez;
+> **triaks–triaks kablo** (Keithley 7078-TRX serisi) gerekir. Guard hattini
+> numuneye kadar tasidigi icin pA seviyesindeki olcumlerde tercih edilen
+> yontem budur; nA ve ustu icin timsah agizli baglanti yeterlidir.
+
+### Ilk kurulumda kablolama testi (numuneye dokunmadan)
+
+1. Iki kirmizi klipsi **birbirine kenetleyin** (kisa devre). Programda
+   ±0.1 V, limit 1 mA ile kisa bir tarama yapin → akim limite dayanmali
+   (yaklasik 1 mA duz cizgi). Cikmiyorsa hat kopuk demektir.
+2. Klipsleri ayirin (acik devre), ayni taramayi tekrarlayin → akim birkac pA
+   mertebesinde, gurultu seviyesinde kalmali. Buyuk bir akim goruyorsanız
+   sizinti/kısa devre vardir; guard klipsinin bir yere degip degmedigine bakin.
+3. Ikisi de beklendigi gibiyse numuneyi baglayin.
 
 ---
 
