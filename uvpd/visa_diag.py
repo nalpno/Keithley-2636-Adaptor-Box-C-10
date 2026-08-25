@@ -45,6 +45,11 @@ def python_bits() -> int:
     return struct.calcsize("P") * 8
 
 
+def in_virtualenv() -> bool:
+    """Sanal ortam (venv) icinde mi calisiyoruz?"""
+    return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
+
+
 def module_version(name: str) -> Optional[str]:
     """Paket kuruluysa surumunu, degilse None dondurur."""
     try:
@@ -107,6 +112,8 @@ def diagnose(probe_backends: bool = True) -> Diagnosis:
     d.add("=== SISTEM ===")
     d.add(f"Python      : {platform.python_version()} ({python_bits()}-bit)")
     d.add(f"Yorumlayici : {sys.executable}")
+    venv = in_virtualenv()
+    d.add(f"Sanal ortam : {'EVET (.venv icinde)' if venv else 'HAYIR (sistem Python)'}")
     d.add(f"Isletim sis.: {platform.platform()}")
     d.add()
 
@@ -119,6 +126,11 @@ def diagnose(probe_backends: bool = True) -> Diagnosis:
     d.add(f"pyvisa-py   : {pyvisa_py_ver or 'kurulu degil'}  (LAN icin yeterli)")
     d.add(f"gpib-ctypes : {gpib_ctypes_ver or 'kurulu degil'}  (GPIB icin)")
     d.add(f"pyusb       : {pyusb_ver or 'kurulu degil'}  (pyvisa-py ile USB icin)")
+    d.add()
+    d.add("  NOT: Bu paketler yukaridaki YORUMLAYICIYA kuruludur. Program")
+    d.add("  farkli bir Python ile calisirsa (orn. .venv), paketler orada da")
+    d.add("  kurulu olmalidir. Arayuzdeki 'VISA teshis' dugmesi programin")
+    d.add("  kendi yorumlayicisini gosterir — ikisi ayni degilse sorun buradadir.")
     d.add()
 
     dlls = visa_dll_candidates()
@@ -163,10 +175,25 @@ def diagnose(probe_backends: bool = True) -> Diagnosis:
     elif ok_py and has_gpib_resource(res_py):
         d.recommended_library = BACKEND_PY
         d.working_resources = list(res_py)
+        gpib_adres = [r for r in res_py if str(r).upper().startswith("GPIB")]
+        if ok_default:
+            giris = (
+                "Sistem VISA (NI-VISA / Keithley I/O Layer) yuklu ve calisiyor, "
+                "FAKAT GPIB adaptorunu goremiyor — ADLINK USB-3488A bir NI\n"
+                "donanimi degildir, NI-VISA yalnizca NI GPIB kartlarini destekler.\n"
+                "pyvisa-py ise cihazi GORUYOR.\n")
+        else:
+            giris = "Sistem VISA yok ama pyvisa-py GPIB kartini goruyor.\n"
         d.suggestion = (
-            "Sistem VISA yok ama pyvisa-py GPIB kartini goruyor.\n"
-            "Baglanti sekmesindeki 'VISA kutuphanesi' alanina  @py  yazin, "
-            "sonra Kaynaklari tara.")
+            giris + "\n"
+            f"Bulunan cihaz: {gpib_adres}\n\n"
+            "YAPILACAK — programda (Baglanti sekmesi):\n"
+            "    VISA kutuphanesi : @py\n"
+            f"    VISA kaynagi     : {gpib_adres[0] if gpib_adres else 'GPIB0::26::INSTR'}\n"
+            "sonra 'Bagla'.\n\n"
+            "Konsoldan denemek icin:\n"
+            f"    python baglanti_testi.py --kutuphane @py "
+            f"--kaynak \"{gpib_adres[0] if gpib_adres else 'GPIB0::26::INSTR'}\"")
     elif not pyvisa_ver:
         d.suggestion = ("pyvisa kurulu degil. Kurulum:\n"
                         "    pip install pyvisa")

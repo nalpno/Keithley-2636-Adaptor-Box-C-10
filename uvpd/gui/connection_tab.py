@@ -262,6 +262,24 @@ class ConnectionTab(QtWidgets.QWidget):
             except Exception as exc:
                 self._scan_failed(exc, library)
                 return
+            # Sistem VISA calisti ama hicbir sey gormedi: ucuncu parti GPIB
+            # adaptorleri (ADLINK USB-3488A) NI-VISA'da gorunmez, pyvisa-py'de
+            # gorunur. Bu durumda @py ile bir kez daha dene.
+            if not found and not library:
+                ok, result = try_backend(BACKEND_PY)
+                if ok and result:
+                    self.visa_lib.setText(BACKEND_PY)
+                    self._push()
+                    found = [str(r) for r in result]
+                    self.session.log(
+                        "Sistem VISA hicbir cihaz gormedi; pyvisa-py (@py) ile "
+                        f"bulundu: {', '.join(found)}")
+                    message(self, "pyvisa-py kullaniliyor",
+                            "Sistem VISA (NI-VISA / Keithley I/O Layer) hicbir "
+                            "cihaz gormedi — ucuncu parti GPIB adaptorlerini "
+                            "desteklemez.\n\n"
+                            "pyvisa-py ile cihaz bulundu ve 'VISA kutuphanesi' "
+                            "alani otomatik olarak @py yapildi.", "info")
         if not found:
             message(self, "Kaynak yok",
                     "Hicbir VISA kaynagi bulunamadi.\n\n"

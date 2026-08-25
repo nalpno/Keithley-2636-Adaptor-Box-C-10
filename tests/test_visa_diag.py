@@ -61,3 +61,25 @@ def test_try_backend_returns_error_for_bogus_library():
     ok, result = vd.try_backend("bu-kutuphane-yok.dll")
     assert ok is False
     assert isinstance(result, str)
+
+
+def test_suggestion_when_system_visa_blind_but_pyvisapy_sees_gpib(monkeypatch):
+    """NI-VISA calisiyor ama bos donuyor, @py cihazi goruyor (ADLINK durumu)."""
+    def fake(lib):
+        if lib == vd.BACKEND_PY:
+            return True, ["GPIB0::26::INSTR"]
+        return True, []
+
+    monkeypatch.setattr(vd, "try_backend", fake)
+    d = vd.diagnose()
+    assert d.recommended_library == vd.BACKEND_PY
+    assert d.working_resources == ["GPIB0::26::INSTR"]
+    # sistem VISA'nin calistigi, ama adaptoru goremedigi dogru anlatilmali
+    assert "yuklu ve calisiyor" in d.suggestion
+    assert "ADLINK" in d.suggestion
+    assert "@py" in d.suggestion
+    assert "GPIB0::26::INSTR" in d.suggestion
+
+
+def test_in_virtualenv_returns_bool():
+    assert isinstance(vd.in_virtualenv(), bool)
