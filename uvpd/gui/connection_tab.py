@@ -10,6 +10,58 @@ from .session import Session
 from .widgets import FormBuilder, group, message
 
 
+def connect_error_hint(exc_text: str, resource: str) -> str:
+    """VISA hata metnine gore somut bir aciklama uretir."""
+    t = exc_text.upper()
+    res = resource.upper()
+
+    if ("RSRC_NFOUND" in t or "INSUFFICIENT LOCATION" in t
+            or "NOT PRESENT" in t or "COULD NOT FIND" in t):
+        msg = ("Bu adreste cihaz bulunamadi — adres yanlis ya da cihaz "
+               "gorunmuyor.\n\n"
+               "Once 'Kaynaklari tara' ile GERCEKTEN bulunan bir adres secin. "
+               "Elle yazdiginiz veya ornek olarak gordugunuz bir adres "
+               "calismaz.")
+        if res.startswith("USB"):
+            msg += ("\n\nUSB adresi cihazin SERI NUMARASINI icermelidir:\n"
+                    "  USB0::0x05E6::0x2636::<seri-no>::INSTR\n"
+                    "Ayrica bu adres yalnizca kablo Keithley'in KENDI USB "
+                    "portuna takiliysa gecerlidir (GPIB adaptoru degil).")
+        elif res.startswith("TCPIP"):
+            msg += ("\n\nLAN adresindeki IP, cihazin gercek IP adresi olmalidir:\n"
+                    "  MENU > LAN > STATUS > IP-ADDRESS")
+        elif res.startswith("GPIB"):
+            msg += ("\n\nGPIB icin: ADLINK USB-3488A adaptorunu NI-VISA/KIOL "
+                    "goremez. 'gpib-kurulum.bat' calistirip VISA kutuphanesi "
+                    "alanina @py yazin.")
+        return msg
+
+    if "TMO" in t or "TIMEOUT" in t or "ZAMAN" in t:
+        return ("Adres bulundu ama cihaz cevap vermedi (zaman asimi).\n\n"
+                "- Keithley'in GPIB adresi bu adresle ayni mi? "
+                "(MENU > COMMUNICATION > GPIB, fabrika degeri 26)\n"
+                "- Cihaz baska bir program tarafindan kullaniliyor olabilir "
+                "(LabVIEW, Keithley Communicator acikken kapatin).\n"
+                "- Cihazi kapatip acmayi deneyin.")
+
+    if "NLISTENERS" in t or "NO LISTENER" in t:
+        return ("GPIB hattinda bu adreste dinleyen cihaz yok.\n\n"
+                "- Keithley acik mi, GPIB kablosu her iki uctan takili mi?\n"
+                "- Cihazin GPIB adresini kontrol edin "
+                "(MENU > COMMUNICATION > GPIB).")
+
+    if "LOCATE A VISA" in t or "VISALIBRARYERROR" in t:
+        return ("VISA kutuphanesi yuklenemedi. '🔍 VISA teshis' dugmesi "
+                "eksigin ne oldugunu soyler.")
+
+    if "PERMISSION" in t or "ACCESS" in t or "VI_ERROR_RSRC_BUSY" in t:
+        return ("Kaynak baska bir program tarafindan kullaniliyor. "
+                "LabVIEW / Keithley Communicator gibi programlari kapatip "
+                "tekrar deneyin.")
+
+    return ("Ayrintili teshis icin '🔍 VISA teshis' dugmesini kullanin.")
+
+
 class ConnectionTab(QtWidgets.QWidget):
     def __init__(self, session: Session, parent=None):
         super().__init__(parent)
@@ -18,16 +70,28 @@ class ConnectionTab(QtWidgets.QWidget):
 
         # ---------------- baglanti kutusu ----------------
         fb = FormBuilder()
+        # Liste yalnizca GERCEKTEN bulunan kaynaklarla doldurulur; ornek
+        # adresler asagida ayri bir ipucu satirinda gosterilir ki taranarak
+        # bulunmus adreslerle karistirilmasin.
         self.resource = QtWidgets.QComboBox()
         self.resource.setEditable(True)
-        self.resource.addItems([s.get("resource", "GPIB0::26::INSTR"),
-                                "GPIB0::26::INSTR", "GPIB0::25::INSTR",
-                                "TCPIP0::192.168.1.10::inst0::INSTR",
-                                "USB0::0x05E6::0x2636::INSTR"])
-        self.resource.setCurrentText(s.get("resource", "GPIB0::26::INSTR"))
+        saved = str(s.get("resource", "") or "")
+        if saved:
+            self.resource.addItem(saved)
+            self.resource.setCurrentText(saved)
+        self.resource.lineEdit().setPlaceholderText(
+            "'Kaynaklari tara' ile doldurun veya adresi elle yazin")
         fb.add("VISA kaynagi", self.resource,
-               "USB-3488A + GPIB icin tipik adres: GPIB0::26::INSTR "
-               "(2636 fabrika GPIB adresi 26)")
+               "Bu liste yalnizca taramada bulunan cihazlarla dolar. "
+               "Elle adres de yazabilirsiniz.")
+
+        hint = QtWidgets.QLabel(
+            "Ornek bicimler (bunlar bulunmus cihaz degil, yalnizca kalip):\n"
+            "GPIB0::26::INSTR    ·    USB0::0x05E6::0x2636::<seri-no>::INSTR"
+            "    ·    TCPIP0::<ip>::inst0::INSTR")
+        hint.setStyleSheet("color:#6b7280; font-size:11px;")
+        hint.setWordWrap(True)
+        fb.add_row(hint)
 
         self.visa_lib = QtWidgets.QLineEdit(s.get("visa_library", ""))
         self.visa_lib.setPlaceholderText("bos = sistem VISA (NI/Keysight/ADLINK), @py = pyvisa-py")
@@ -209,7 +273,8 @@ class ConnectionTab(QtWidgets.QWidget):
         self.resource.addItems(found)
         if current in found:
             self.resource.setCurrentText(current)
-        self.session.log(f"Bulunan kaynaklar: {', '.join(found)}")
+        self.session.log(f"{len(found)} kaynak bulundu: {', '.join(found)}")
+        self.session.status.emit(f"{len(found)} VISA kaynagi bulundu")
 
     def _scan_failed(self, exc: Exception, library: str) -> None:
         """Tarama basarisiz: otomatik yedek backend dene, olmazsa teshise yonlendir."""
@@ -308,12 +373,21 @@ class ConnectionTab(QtWidgets.QWidget):
                 resource, simulate=self.simulate.isChecked(),
                 visa_library=library)
         except Exception as exc:
-            hint = ""
-            if "locate a VISA" in str(exc) or "VisaLibraryError" in type(exc).__name__:
-                hint = ("\n\nVISA kutuphanesi bulunamadi. 'VISA teshis' dugmesi "
-                        "sebebini ve cozumu gosterir.")
-            message(self, "Baglanti hatasi",
-                    f"{resource} adresine baglanilamadi:\n\n{exc}{hint}", "error")
+            self.session.log(f"Baglanti hatasi ({resource}): {exc}")
+            hint = connect_error_hint(f"{type(exc).__name__}: {exc}", resource)
+
+            box = QtWidgets.QMessageBox(self)
+            box.setWindowTitle("Baglanti hatasi")
+            box.setIcon(QtWidgets.QMessageBox.Critical)
+            box.setText(f"{resource} adresine baglanilamadi.")
+            box.setInformativeText(hint)
+            box.setDetailedText(f"{type(exc).__name__}: {exc}")
+            run_diag = box.addButton("🔍 Teshisi calistir",
+                                     QtWidgets.QMessageBox.AcceptRole)
+            box.addButton("Kapat", QtWidgets.QMessageBox.RejectRole)
+            box.exec_() if hasattr(box, "exec_") else box.exec()
+            if box.clickedButton() is run_diag:
+                self._diagnose()
             return
         self.idn_label.setText(idn)
 

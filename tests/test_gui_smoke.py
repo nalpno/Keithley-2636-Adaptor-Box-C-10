@@ -106,3 +106,43 @@ def test_transient_tab_short_run(app, tmp_path):
     assert "light_events" in ds.settings
     assert tab.metrics.rowCount() > 0
     win.close()
+
+
+def test_connect_error_hints():
+    """Bagli olmayan adres hatalarinda dogru yonlendirme verilmeli."""
+    from uvpd.gui.connection_tab import connect_error_hint
+
+    h = connect_error_hint("VI_ERROR_RSRC_NFOUND: Insufficient location information",
+                           "USB0::0x05E6::0x2636::INSTR")
+    assert "Kaynaklari tara" in h
+    assert "SERI NUMARASINI" in h
+
+    h = connect_error_hint("VI_ERROR_RSRC_NFOUND: not present", "GPIB0::26::INSTR")
+    assert "gpib-kurulum.bat" in h
+
+    h = connect_error_hint("VI_ERROR_RSRC_NFOUND: not present",
+                           "TCPIP0::192.168.1.10::inst0::INSTR")
+    assert "IP-ADDRESS" in h
+
+    h = connect_error_hint("VI_ERROR_TMO: Timeout expired", "GPIB0::26::INSTR")
+    assert "zaman asimi" in h.lower()
+
+    h = connect_error_hint("VI_ERROR_NLISTENERS: no listeners", "GPIB0::26::INSTR")
+    assert "dinleyen" in h
+
+    h = connect_error_hint("ValueError: Could not locate a VISA implementation", "x")
+    assert "VISA teshis" in h
+
+
+def test_resource_combo_has_no_fake_presets(app):
+    """Kaynak listesi yalnizca kayitli/taranmis adresleri icermeli."""
+    from uvpd.gui.main_window import MainWindow
+
+    win = MainWindow(simulate=True)
+    tab = win.tab_conn
+    items = [tab.resource.itemText(i) for i in range(tab.resource.count())]
+    # Ornek adresler listeye konmamali (kullanici onlari bulunmus sanmasin)
+    assert "TCPIP0::192.168.1.10::inst0::INSTR" not in items
+    assert "USB0::0x05E6::0x2636::INSTR" not in items
+    assert len(items) <= 1
+    win.close()
