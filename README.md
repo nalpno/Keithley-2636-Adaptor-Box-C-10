@@ -62,12 +62,27 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 4. Once simulasyonla deneyin
+### 4. Baglantiyi test edin
+
+Cihazi USB ile takip acin, sonra **`test-baglanti.bat`** dosyasini calistirin.
+Betik VISA kaynaklarini tarar, cihaza baglanir ve kimligini (`*IDN?`) okur —
+**cikisi acmaz**, yani numune icin risk yoktur:
+
+```bat
+python baglanti_testi.py                 # kaynak tara + bagla + kimlik oku
+python baglanti_testi.py --olcum         # ek olarak guvenli olcum testi (±0.1 V, 1 mA limit)
+python baglanti_testi.py --kaynak "USB0::0x05E6::0x2636::<seri>::INSTR"
+```
+
+`--olcum` cikisi kisa sureligine acar; **numune bagli degilken** (acik devre)
+beklenen sonuc pA seviyesinde akimdir.
+
+### 5. Once simulasyonla deneyin
 
 **`baslat-simulasyon.bat`** — cihaz baglamadan arayuzu, taramayi ve analizleri
 denemenizi saglar. Buradaki her sey calisiyorsa kurulum tamamdir.
 
-### 5. Cihazla calistirin
+### 6. Cihazla calistirin
 
 Keithley'i baglayip **`baslat.bat`** dosyasini calistirin, ardindan `Baglanti`
 sekmesinden `Kaynaklari tara` → `Bagla`.
@@ -218,7 +233,9 @@ da denetler.
 kurulum.bat                Windows kurulum betigi
 baslat.bat                 programi calistirir
 baslat-simulasyon.bat      cihazsiz deneme modu
+test-baglanti.bat          cihaz baglantisini konsoldan dogrular
 run_gui.py                 arayuzu baslatir
+baglanti_testi.py          baglanti testi betigi
 uvpd/
   instrument.py            Keithley 2636 TSP surucusu (pyvisa)
   simulator.py             cihazsiz test icin sahte SMU (fotodiyot modeli)
@@ -226,6 +243,7 @@ uvpd/
   analysis.py              karsilastirma, R/EQE/D*, rise-fall, diyot uydurma
   dataset.py               veri kabi + meta verili CSV okuma/yazma
   config.py                ayarlar ve kablolama haritasi
+  visa_diag.py             VISA/GPIB kurulum teshisi
   gui/                     sekmeler, canli grafik, olcum is parcacigi
 config/wiring.json         kablolama haritasi (duzenlenebilir)
 docs/hardware_setup.md     donanim kurulumu

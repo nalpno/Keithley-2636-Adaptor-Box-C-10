@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Keithley 2636 baglanti testi (konsol).
+
+GUI'ye gecmeden once cihaz iletisimini adim adim dogrular. Varsayilan olarak
+CIKIS ACILMAZ — yalnizca cihazla konusulur.
+
+Kullanim:
+    python baglanti_testi.py                 # kaynak tara + bagla + kimlik oku
+    python baglanti_testi.py --kaynak "USB0::0x05E6::0x2636::4037576::INSTR"
+    python baglanti_testi.py --olcum         # ek olarak guvenli olcum testi yapar
+    python baglanti_testi.py --simulate      # cihazsiz deneme
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+import time
+
+from uvpd.instrument import SmuConfig, create_instrument
+from uvpd.visa_diag import BACKEND_DEFAULT, BACKEND_PY, try_backend
+
+SEP = "-" * 66
+
+
+def baslik(text: str) -> None:  # pragma: no cover - konsol suslemesi
+    print(f"\n{SEP}\n{text}\n{SEP}")
+
+
+def kaynaklari_bul(library: str):
+    """Once verilen backend, olmazsa @py ile kaynak listeler."""
+    ok, result = try_backend(library)
+    if ok:
+        return library, list(result)
+    print(f"  [!] '{library or 'sistem VISA'}' basarisiz: {result}")
+    if library != BACKEND_PY:
+        ok, result = try_backend(BACKEND_PY)
+        if ok:
+            print("  [i] pyvisa-py (@py) calisti.")
+            return BACKEND_PY, list(result)
+        print(f"  [!] pyvisa-py de basarisiz: {result}")
+    return library, []
+
+
+def kaynak_sec(kaynaklar):
+    """Listeden Keithley'e en cok benzeyen kaynagi secer."""
+    for r in kaynaklar:
+        u = str(r).upper()
+        if "0X05E6" in u or "2636" in u:      # Keithley VID / model
+            return str(r)
+    for onek in ("USB", "GPIB", "TCPIP"):
+        for r in kaynaklar:
+            if str(r).upper().startswith(onek):
+                return str(r)
+    return str(kaynaklar[0]) if kaynaklar else ""
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description="Keithley 2636 baglanti testi")
+    ap.add_argument("--kaynak", default="", help="VISA kaynak adresi (bos = otomatik sec)")
+    ap.add_argument("--kutuphane", default=BACKEND_DEFAULT,
+                    help="VISA kutuphanesi (bos = sistem VISA, @py = pyvisa-py)")
+    ap.add_argument("--kanal", default="a", choices=["a", "b"], help="SMU kanali")
+    ap.add_argument("--olcum", action="store_true",
+                    help="Cikisi kisa sureligine acip guvenli bir olcum testi yapar")
+    ap.add_argument("--limit", type=float, default=1e-3, help="Akim limiti (A), varsayilan 1e-3")
+    ap.add_argument("--gerilim", type=float, default=0.1,
+                    help="Olcum testinde uygulanacak gerilim (V), varsayilan 0.1")
+    ap.add_argument("--simulate", action="store_true", help="Cihazsiz simulasyon")
+    args = ap.parse_args(argv)
+
+    baslik("1) VISA kaynaklari taraniyor")
+    if args.simulate:
+        library, kaynaklar = "", ["SIM::UVPD::INSTR"]
+    else:
+        library, kaynaklar = kaynaklari_bul(args.kutuphane)
+    if not kaynaklar:
+        print("  Hicbir kaynak bulunamadi.\n")
+        print("  Ayrintili teshis icin:  python -m uvpd.visa_diag")
+        return 1
+    for r in kaynaklar:
+        print(f"  - {r}")
+
+    kaynak = args.kaynak or kaynak_sec(kaynaklar)
+    print(f"\n  Secilen kaynak : {kaynak}")
+    print(f"  VISA kutuphane : {library or '(sistem VISA)'}")
+
+    baslik("2) Cihaza baglaniliyor")
+    inst = create_instrument(kaynak, simulate=args.simulate)
+    try:
+        idn = inst.connect(library)
+    except Exception as exc:
+        print(f"  BASARISIZ: {exc}\n")
+        print("  Kontrol listesi:")
+        print("   - Cihaz acik mi, USB kablosu takili mi?")
+        print("   - KIOL/NI-VISA kurulumundan sonra bilgisayar yeniden baslatildi mi?")
+        print("   - Kaynak adresi dogru mu? (yukaridaki listeden birini --kaynak ile verin)")
+        return 1
+    print(f"  BAGLANDI\n  Kimlik (*IDN?): {idn}")
+
+    parcalar = [p.strip() for p in idn.split(",")]
+    if len(parcalar) >= 3:
+        print(f"    Uretici : {parcalar[0]}")
+        print(f"    Model   : {parcalar[1]}")
+        print(f"    Seri no : {parcalar[2]}")
+
+    try:
+        baslik("3) Hata kuyrugu")
+        hatalar = inst.check_errors()
+        print("  Temiz." if not hatalar else "  " + "\n  ".join(hatalar))
+
+        if not args.olcum:
+            baslik("SONUC")
+            print("  Iletisim calisiyor. Cikis acilmadi.")
+            print("  Olcum zincirini de denemek icin:  python baglanti_testi.py --olcum")
+            return 0
+
+        baslik("4) Olcum testi (cikis kisa sureligine acilir)")
+        print(f"  Kanal      : {args.kanal.upper()}")
+        print(f"  Akim limiti: {args.limit:g} A")
+        print(f"  Gerilim    : 0 V ve ±{abs(args.gerilim):g} V")
+        print("\n  UYARI: Numune bagliysa bu gerilim numuneye uygulanir.")
+        print("  Acik devre (kablolar sokuk) testinde beklenen: pA seviyesinde akim.")
+        print("  Kisa devre testinde beklenen: akim limite dayanir.\n")
+
+        cfg = SmuConfig(channel=args.kanal, source_func="voltage",
+                        compliance=args.limit, nplc=1.0, four_wire=False,
+                        autorange=True, low_range_i=1e-9)
+        inst.apply_config(cfg)
+        inst.output_on()
+        time.sleep(0.3)
+        for seviye in (0.0, abs(args.gerilim), -abs(args.gerilim), 0.0):
+            i, v = inst.set_level_and_measure(seviye, settle_s=0.2)
+            print(f"    V_ayar = {seviye:+7.3f} V   ->   V_olculen = {v:+12.6g} V   "
+                  f"I = {i:+12.6g} A")
+        inst.output_off()
+        print("\n  Cikis kapatildi.")
+
+        hatalar = inst.check_errors()
+        if hatalar:
+            print("  Cihaz hata kuyrugu: " + " | ".join(hatalar))
+
+        baslik("SONUC")
+        print("  Olcum zinciri calisiyor. Artik programi baslatabilirsiniz:")
+        print("      baslat.bat   (veya  python run_gui.py )")
+        return 0
+    finally:
+        try:
+            inst.close()
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    sys.exit(main())
