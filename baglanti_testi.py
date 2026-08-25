@@ -28,18 +28,51 @@ def baslik(text: str) -> None:  # pragma: no cover - konsol suslemesi
 
 
 def kaynaklari_bul(library: str):
-    """Once verilen backend, olmazsa @py ile kaynak listeler."""
+    """Once verilen backend, olmazsa @py ile kaynak listeler.
+
+    Doner: (kutuphane, kaynaklar, visa_calisiyor)
+    ``visa_calisiyor`` VISA katmaninin yuklenip yuklenmedigini soyler; bu,
+    "VISA yok" ile "VISA var ama cihaz gorunmuyor" durumlarini ayirir.
+    """
     ok, result = try_backend(library)
     if ok:
-        return library, list(result)
+        print(f"  [ok] VISA katmani yuklendi ({library or 'sistem VISA'}).")
+        return library, list(result), True
     print(f"  [!] '{library or 'sistem VISA'}' basarisiz: {result}")
     if library != BACKEND_PY:
         ok, result = try_backend(BACKEND_PY)
         if ok:
             print("  [i] pyvisa-py (@py) calisti.")
-            return BACKEND_PY, list(result)
+            return BACKEND_PY, list(result), True
         print(f"  [!] pyvisa-py de basarisiz: {result}")
-    return library, []
+    return library, [], False
+
+
+def cihaz_gorunmuyor_yardimi() -> None:
+    """VISA calisiyor ama hicbir cihaz listelenmiyorsa yol gosterir."""
+    print("\n  VISA katmani CALISIYOR fakat hicbir cihaz gorunmuyor.")
+    print("  Yani KIOL/NI-VISA kurulumu tamam; eksik olan cihazin PC'ye")
+    print("  taninmasi. Sirasiyla kontrol edin:\n")
+    print("   1. Keithley'in on panel ekrani acik mi? (cihaz enerjili olmali)")
+    print("   2. USB kablosu cihazin arkasindaki KARE (tip B) porta takili mi?")
+    print("      LAN/TSP-Link portlari degil.")
+    print("   3. Kablo veri kablosu mu? Bazi kablolar yalnizca sarj icindir;")
+    print("      baska bir USB kablosuyla deneyin.")
+    print("   4. Aygit Yoneticisi'ni acin (Win+X > Aygit Yoneticisi):")
+    print("      'USB Test and Measurement Devices' altinda Keithley gorunmeli.")
+    print("      Sari unlem varsa surucu yuklenmemis demektir.")
+    print("   5. KIOL kurulumundan sonra bilgisayar yeniden baslatildi mi?")
+    print("      Baslatilmadiysa once onu yapin, sonra cihazi takin.")
+    print("   6. KIOL ile gelen 'Keithley Communicator' programini acin:")
+    print("      cihaz orada da gorunmuyorsa sorun Python'da degil, Windows")
+    print("      surucu tarafindadir.\n")
+    print("  Adresi biliyorsaniz taramayi atlayabilirsiniz (seri numarasi")
+    print("  cihazin arkasindaki etikette yazar):")
+    print('      python baglanti_testi.py --kaynak "USB0::0x05E6::0x2636::<seri-no>::INSTR"\n')
+    print("  LAN kablosu takmak da bir secenek:")
+    print("      pip install pyvisa-py")
+    print('      python baglanti_testi.py --kutuphane @py --kaynak "TCPIP0::<ip>::inst0::INSTR"')
+    print("  (IP adresi: cihaz on paneli > MENU > LAN > STATUS > IP-ADDRESS)")
 
 
 def kaynak_sec(kaynaklar):
@@ -71,17 +104,25 @@ def main(argv=None) -> int:
 
     baslik("1) VISA kaynaklari taraniyor")
     if args.simulate:
-        library, kaynaklar = "", ["SIM::UVPD::INSTR"]
+        library, kaynaklar, visa_ok = "", ["SIM::UVPD::INSTR"], True
     else:
-        library, kaynaklar = kaynaklari_bul(args.kutuphane)
-    if not kaynaklar:
-        print("  Hicbir kaynak bulunamadi.\n")
-        print("  Ayrintili teshis icin:  python -m uvpd.visa_diag")
-        return 1
+        library, kaynaklar, visa_ok = kaynaklari_bul(args.kutuphane)
+
     for r in kaynaklar:
         print(f"  - {r}")
 
+    if not kaynaklar and not args.kaynak:
+        if visa_ok:
+            cihaz_gorunmuyor_yardimi()
+        else:
+            print("\n  VISA katmani yuklenemedi — cihazdan once bunu cozmek gerekir.")
+            print("  Ayrintili teshis icin:  python -m uvpd.visa_diag")
+        return 1
+
+    # Kaynak elle verildiyse tarama bos donse bile denenir
     kaynak = args.kaynak or kaynak_sec(kaynaklar)
+    if args.kaynak and not kaynaklar:
+        print("  (Tarama bos dondu; verilen adres dogrudan denenecek.)")
     print(f"\n  Secilen kaynak : {kaynak}")
     print(f"  VISA kutuphane : {library or '(sistem VISA)'}")
 
