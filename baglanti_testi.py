@@ -75,6 +75,41 @@ def cihaz_gorunmuyor_yardimi() -> None:
     print("  (IP adresi: cihaz on paneli > MENU > LAN > STATUS > IP-ADDRESS)")
 
 
+def ayarlari_kaydet(kaynak: str, library: str) -> None:
+    """Calisan baglanti ayarini programin ayar dosyasina yazar.
+
+    Boylece arayuz acildiginda ayni kaynak/kutuphane hazir gelir.
+    """
+    try:
+        from uvpd.config import SETTINGS_PATH, load_settings, save_settings
+
+        ayarlar = load_settings()
+        ayarlar["resource"] = kaynak
+        ayarlar["visa_library"] = library
+        ayarlar["simulate"] = False
+        save_settings(ayarlar)
+        print(f"\n  [i] Bu ayar programa kaydedildi ({SETTINGS_PATH}):")
+        print(f"      VISA kaynagi     : {kaynak}")
+        print(f"      VISA kutuphanesi : {library or '(sistem VISA)'}")
+        print("      Arayuz acildiginda hazir gelecek.")
+    except Exception as exc:  # pragma: no cover
+        print(f"  [!] Ayar kaydedilemedi: {exc}")
+
+
+def komut_metni(args, kaynak: str, library: str, ek: str = "") -> str:
+    """Kullanicinin tekrar calistirabilecegi tam komutu uretir."""
+    parcalar = ["python baglanti_testi.py"]
+    if library:
+        parcalar.append(f"--kutuphane {library}")
+    if kaynak:
+        parcalar.append(f'--kaynak "{kaynak}"')
+    if args.kanal != "a":
+        parcalar.append(f"--kanal {args.kanal}")
+    if ek:
+        parcalar.append(ek)
+    return " ".join(parcalar)
+
+
 def kaynak_sec(kaynaklar):
     """Listeden Keithley'e en cok benzeyen kaynagi secer."""
     for r in kaynaklar:
@@ -99,6 +134,8 @@ def main(argv=None) -> int:
     ap.add_argument("--limit", type=float, default=1e-3, help="Akim limiti (A), varsayilan 1e-3")
     ap.add_argument("--gerilim", type=float, default=0.1,
                     help="Olcum testinde uygulanacak gerilim (V), varsayilan 0.1")
+    ap.add_argument("--kaydetme", action="store_true",
+                    help="Basarili baglanti ayarini programa kaydetme")
     ap.add_argument("--simulate", action="store_true", help="Cihazsiz simulasyon")
     args = ap.parse_args(argv)
 
@@ -145,6 +182,9 @@ def main(argv=None) -> int:
         print(f"    Model   : {parcalar[1]}")
         print(f"    Seri no : {parcalar[2]}")
 
+    if not args.simulate and not args.kaydetme:
+        ayarlari_kaydet(kaynak, library)
+
     try:
         baslik("3) Hata kuyrugu")
         hatalar = inst.check_errors()
@@ -152,8 +192,10 @@ def main(argv=None) -> int:
 
         if not args.olcum:
             baslik("SONUC")
-            print("  Iletisim calisiyor. Cikis acilmadi.")
-            print("  Olcum zincirini de denemek icin:  python baglanti_testi.py --olcum")
+            print("  Iletisim calisiyor. Cikis acilmadi.\n")
+            print("  Olcum zincirini de denemek icin (kablolar sokukken):")
+            print(f"      {komut_metni(args, kaynak, library, '--olcum')}\n")
+            print("  Arayuzu baslatmak icin:  baslat.bat")
             return 0
 
         baslik("4) Olcum testi (cikis kisa sureligine acilir)")
@@ -183,7 +225,10 @@ def main(argv=None) -> int:
 
         baslik("SONUC")
         print("  Olcum zinciri calisiyor. Artik programi baslatabilirsiniz:")
-        print("      baslat.bat   (veya  python run_gui.py )")
+        print("      baslat.bat   (veya  python run_gui.py )\n")
+        print("  Arayuzde Baglanti sekmesinde su degerler hazir gelmeli:")
+        print(f"      VISA kaynagi     : {kaynak}")
+        print(f"      VISA kutuphanesi : {library or '(sistem VISA)'}")
         return 0
     finally:
         try:

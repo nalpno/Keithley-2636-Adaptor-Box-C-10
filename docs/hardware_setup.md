@@ -214,7 +214,18 @@ pip install pyvisa-py
 - Programda **VISA kutuphanesi** alanina `@py` yazin
 - **VISA kaynagi** alanina elle girin: `TCPIP0::<ip>::inst0::INSTR`
 
-### c) GPIB (ADLINK USB-3488A)
+### c) GPIB (ADLINK USB-3488A) — **kurulu ve dogrulanmis yol**
+
+> **Calistigi dogrulanan yapilandirma:**
+> Keithley **2636B** (seri 4037576, firmware 3.0.3), ADLINK USB-3488A ile
+> GPIB adres 26 uzerinden, Windows 11 + Python 3.13:
+> ```
+> VISA kutuphanesi : @py          (pyvisa-py + gpib-ctypes)
+> VISA kaynagi     : GPIB0::26::INSTR
+> ```
+> Keithley I/O Layer kurulu olsa bile NI-VISA bu adaptoru **goremez**
+> (`Sistem VISA (bos) : BASARILI []`), pyvisa-py gorur.
+
 
 > **Onemli:** USB-3488A bir ADLINK urunudur, National Instruments donanimi
 > degildir. NI-VISA ve Keithley I/O Layer **yalnizca NI GPIB donanimini**
