@@ -30,7 +30,7 @@ class ConnectionTab(QtWidgets.QWidget):
                "(2636 fabrika GPIB adresi 26)")
 
         self.visa_lib = QtWidgets.QLineEdit(s.get("visa_library", ""))
-        self.visa_lib.setPlaceholderText("bos = sistem VISA (NI/Keysight/MCC), @py = pyvisa-py")
+        self.visa_lib.setPlaceholderText("bos = sistem VISA (NI/Keysight/ADLINK), @py = pyvisa-py")
         fb.add("VISA kutuphanesi", self.visa_lib)
 
         self.simulate = fb.check("Simulasyon modu (cihazsiz)", s.get("simulate", False),

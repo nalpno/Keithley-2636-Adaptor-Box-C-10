@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
 # VISA kutuphanesi olarak denenecek backend'ler
-BACKEND_DEFAULT = ""      # sistem VISA (NI-VISA, Keysight IO, MCC ...)
+BACKEND_DEFAULT = ""      # sistem VISA (NI-VISA, Keysight IO, ADLINK ...)
 BACKEND_PY = "@py"        # saf Python: pyvisa-py
 
 
@@ -66,7 +66,7 @@ def visa_dll_candidates() -> List[Tuple[str, bool, str]]:
         (os.path.join(sys32, "visa32.dll"), "System32'deki VISA"),
         (os.path.join(wow64, "visa32.dll"), "32-bit VISA (32-bit Python icin)"),
         (os.path.join(sys32, "gpib-32.dll"), "NI-488.2 uyumlu GPIB surucusu "
-                                             "(USB-3488A / MCC bunu kurar)"),
+                                             "(ADLINK USB-3488A surucusu bunu kurar)"),
         (os.path.join(sys32, "ni4882.dll"), "NI-488.2 surucusu"),
     ]
     return [(path, os.path.exists(path), note) for path, note in cands]

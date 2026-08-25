@@ -32,18 +32,39 @@ unutmayin. Kontrol:
 python --version
 ```
 
-### 2. Programi indirin
+### 2. Programi indirin (git ile — onerilen)
 
-Git varsa:
+ZIP indirip her seferinde klasore acmak yerine bir kez `git clone` yapin;
+sonraki guncellemeler tek tikla gelir.
+
+**Git kurulu degilse:** <https://git-scm.com/download/win> → kurulumda tum
+varsayilanlar kabul edilebilir.
+
+Komut istemini acin (Baslat > `cmd`) ve calistirin:
 
 ```bat
-git clone -b claude/inspiring-newton-m7ggeg https://github.com/nalpno/Keithley-2636-Adaptor-Box-C-10.git
-cd Keithley-2636-Adaptor-Box-C-10
+cd /d C:\
+git clone -b claude/inspiring-newton-m7ggeg https://github.com/nalpno/Keithley-2636-Adaptor-Box-C-10.git Keithley_2636_adaptor_box_C_10
+cd Keithley_2636_adaptor_box_C_10
 ```
 
-Git yoksa: GitHub'da depo sayfasinda dal (branch) listesinden
-`claude/inspiring-newton-m7ggeg` secilir → **Code → Download ZIP** → indirilen
-dosya bir klasore cikarilir.
+Bu, kodu `C:\Keithley_2636_adaptor_box_C_10` klasorune indirir. Depo ozel ise
+GitHub kullanici adi/parolasi (veya tarayici ile oturum) sorulur.
+
+**Sonraki guncellemeler:** klasordeki **`guncelle.bat`** dosyasina cift
+tiklayin — `git pull` yapar ve gerekirse paketleri gunceller. Elle yapmak
+isterseniz:
+
+```bat
+cd /d C:\Keithley_2636_adaptor_box_C_10
+git pull
+```
+
+> Bir klasorde hizlica komut istemi acmak icin: Dosya Gezgini'nde o klasoru
+> acin, adres cubuguna `cmd` yazip Enter'a basin.
+
+Git kullanmak istemezseniz: GitHub'da dal listesinden
+`claude/inspiring-newton-m7ggeg` secilir → **Code → Download ZIP**.
 
 ### 3. Paketleri kurun
 
@@ -95,8 +116,9 @@ sekmesinden `Kaynaklari tara` → `Bagla`.
 >   bit genisliginde). Adres: `USB0::0x05E6::0x2636::<seri-no>::INSTR`
 > - **LAN ile:** surucu gerekmez — `pip install pyvisa-py`, VISA kutuphanesi
 >   alanina `@py`, kaynak `TCPIP0::<ip>::inst0::INSTR`
-> - **GPIB (USB-3488A) ile:** surucu + `pip install pyvisa-py gpib-ctypes`,
->   VISA kutuphanesi `@py`, kaynak `GPIB0::26::INSTR`
+> - **GPIB (ADLINK USB-3488A) ile:** NI-VISA/KIOL bu adaptoru **goremez**.
+>   **`gpib-kurulum.bat`** calistirin (pyvisa-py + gpib-ctypes kurar ve
+>   baglantiyi dener); VISA kutuphanesi `@py`, kaynak `GPIB0::26::INSTR`
 >
 > Ayrinti: [docs/hardware_setup.md](docs/hardware_setup.md) bolum 7.
 
@@ -231,6 +253,8 @@ da denetler.
 
 ```
 kurulum.bat                Windows kurulum betigi
+guncelle.bat               git pull ile programi gunceller
+gpib-kurulum.bat           ADLINK GPIB adaptoru icin pyvisa-py + gpib-ctypes
 baslat.bat                 programi calistirir
 baslat-simulasyon.bat      cihazsiz deneme modu
 test-baglanti.bat          cihaz baglantisini konsoldan dogrular

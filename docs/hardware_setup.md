@@ -214,17 +214,35 @@ pip install pyvisa-py
 - Programda **VISA kutuphanesi** alanina `@py` yazin
 - **VISA kaynagi** alanina elle girin: `TCPIP0::<ip>::inst0::INSTR`
 
-### c) GPIB (USB-3488A)
+### c) GPIB (ADLINK USB-3488A)
 
-1. USB-3488A surucusunu kurun (NI-488.2 uyumlu `gpib-32.dll` saglar).
-2. Cihazin GPIB adresini kontrol edin
+> **Onemli:** USB-3488A bir ADLINK urunudur, National Instruments donanimi
+> degildir. NI-VISA ve Keithley I/O Layer **yalnizca NI GPIB donanimini**
+> destekler; bu adaptoru goremezler. Kurulu olmalari bu yolda ise yaramaz —
+> `Kaynaklari tara` bos doner (hata vermez, cunku VISA yuklenir).
+
+1. **ADLINK USB-3488A surucusunu** kurun. Aygit Yoneticisi'nde
+   "Evrensel Seri Yol Cihazlari" altinda `ADLINK USB-3488` gorunuyorsa
+   surucu kurulu demektir. Surucu, NI-488.2 uyumlu `gpib-32.dll` saglar.
+2. Keithley'in GPIB adresini kontrol edin
    (`MENU → COMMUNICATION → GPIB → ADDRESS`), fabrika degeri **26**.
-3. Sistemde VISA yoksa: `pip install pyvisa-py gpib-ctypes`, VISA kutuphanesi
-   alanina `@py`.
-4. Kaynak adresi: `GPIB0::26::INSTR`
+3. Python tarafinda saf Python yolunu kurun — bu, `gpib-32.dll` uzerinden
+   calisir:
 
-> USB-3488A bir National Instruments karti degildir; NI-VISA onu goremeyebilir.
-> Bu durumda (c) adimindaki `@py` yolunu kullanin.
+   ```bat
+   pip install pyvisa-py gpib-ctypes
+   ```
+
+   (Hazir betik: `gpib-kurulum.bat`)
+4. Programda **VISA kutuphanesi** alanina `@py`, **VISA kaynagi** alanina
+   `GPIB0::26::INSTR` girin.
+
+**Iletisim kuruldugunun isareti:** Keithley'in on panelinde **REM** (remote)
+yazisi belirir. Yazmiyorsa cihaza hicbir komut ulasmamis demektir.
+
+`gpib-32.dll` bulunamiyorsa (teshis raporu soyler) ADLINK'in GPIB yazilim
+paketini eksiksiz kurun — LabVIEW'in calistigi PC'de kurulu olan paketin
+aynisi.
 
 ---
 

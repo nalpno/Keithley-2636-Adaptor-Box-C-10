@@ -56,7 +56,7 @@ python -c "import pyvisa; rm=pyvisa.ResourceManager(); print('  Bulunan kaynakla
 if errorlevel 1 (
     echo   [UYARI] VISA kutuphanesi bulunamadi.
     echo   USB-3488A surucusu ve VISA (NI-VISA / Keysight IO Libraries /
-    echo   MCC VISA) kurulu olmali. 4PP programinda kullandiginiz kurulum
+    echo   ADLINK VISA) kurulu olmali. 4PP programinda kullandiginiz kurulum
     echo   yeterlidir. Cihaz olmadan denemek icin simulasyon modunu kullanin.
 )
 echo ------------------------------------------------------------
