@@ -1,8 +1,7 @@
 # Donanim kurulumu ve kablolama
 
 Bu belge fotograflardaki duzene gore hazirlanmistir:
-Keithley 2636 (SourceMeter) → PC (USB, LAN veya USB-3488A GPIB arabirimi ile;
-bkz. bolum 7), ve Keithley → Adapter Box C 10 → prob istasyonu (numune).
+Keithley 2636 (SourceMeter) → PC (GPIB ya da VISA ile; bkz. bolum 7), ve Keithley → Adapter Box C 10 → prob istasyonu (numune).
 
 > **Kurulu duzen:** Bolum 4'teki BNC baglantisi laboratuvarda kurulu ve
 > LabVIEW ile dogrulanmis durumdadir; `config/wiring.json` bu duzeni icerir ve
@@ -180,80 +179,48 @@ Program, olcum baslatmadan once Baglanti sekmesindeki
 
 ---
 
-## 7. PC baglantisi: USB, LAN veya GPIB
+## 7. PC baglantisi (Windows XP surumu)
 
-Program uc baglanti yolunu da destekler. Ortak sart: Python'un bir **VISA**
-arayuzu bulabilmesi. LabVIEW'in calisiyor olmasi yetmez — LabVIEW kendi
-surucusunu kullanir, Python ayri bir VISA katmanina ihtiyac duyar.
+XP surumu **hicbir Python paketi kullanmaz** (pyvisa, pyvisa-py, gpib-ctypes
+YOK). Cihaz surucusunun DLL'i dogrudan cagrilir. Iki yol vardir; program
+`Arayuz = Otomatik` iken once birincisini dener:
 
-> Takildiginizda: **Baglanti → 🔍 VISA teshis** dugmesi sistemi tarar ve hangi
-> adimin eksik oldugunu soyler. Ayni raporu konsoldan da alabilirsiniz:
-> `python -m uvpd.visa_diag`
+| Arayuz | Kullandigi dosya | Ne zaman |
+|---|---|---|
+| **GPIB** | `C:\WINDOWS\system32\gpib-32.dll` | NI GPIB kartlari **ve** ADLINK USB-3488A gibi NI-488.2 uyumlu adaptorler |
+| **VISA** | `C:\WINDOWS\system32\visa32.dll` | NI-VISA kuruluysa (GPIB, USB veya LAN kaynaklari) |
 
-### a) USB (en pratik)
+> Takildiginizda: `teshis.bat` (ya da programda **Baglanti > Teshis**) hangi
+> DLL'in bulundugunu, hangisinin cihaz gordugunu ve ne yapilacagini yazar.
 
-1. Bir VISA runtime kurun — ikisinden biri yeterlidir:
-   - **Keithley I/O Layer (KIOL)** — Tektronix/Keithley sitesinden, cihaza ozel,
-     onerilen
-   - **NI-VISA** — ni.com, ucretsiz
-   Kurulum, Python ile **ayni bit genisliginde** olmalidir (64-bit Python →
-   64-bit VISA). Kurulumdan sonra bilgisayari yeniden baslatin.
-2. Cihazi USB (tip B) kablosuyla PC'ye baglayin.
-3. Programda **Kaynaklari tara** → adres su bicimde gorunur:
-   `USB0::0x05E6::0x2636::<seri-no>::INSTR`
+### GPIB (onerilen)
 
-### b) LAN (surucu kurmadan)
+1. GPIB adaptorunun/kartinin XP surucusu kurulu olmali. Bu PC daha once
+   Keithley ile haberlestiyse buyuk olasilikla kuruludur; kontrol icin
+   `C:\WINDOWS\system32\gpib-32.dll` dosyasi var mi bakin.
+2. Keithley'in GPIB adresi: `MENU > COMMUNICATION > GPIB > ADDRESS`
+   (fabrika degeri **26**).
+3. Programda: **Arayuz = GPIB** (veya Otomatik), **Kaynak = GPIB0::26::INSTR**.
 
-VISA runtime kurmak istemiyorsaniz LAN yolu saf Python ile calisir:
+Iletisim kuruldugunda Keithley'in on panelinde **REM** yazisi belirir.
 
-```bat
-pip install pyvisa-py
-```
+> Windows 10/11 PC'deki deneyim: ADLINK USB-3488A NI-VISA tarafindan
+> **gorulmez**, ama `gpib-32.dll` uzerinden sorunsuz calisir. XP surumu bu
+> nedenle GPIB'de dogrudan `gpib-32.dll` kullanir.
 
-- Cihazin IP adresini on panelden okuyun: `MENU → LAN → STATUS → IP-ADDRESS`
-- Programda **VISA kutuphanesi** alanina `@py` yazin
-- **VISA kaynagi** alanina elle girin: `TCPIP0::<ip>::inst0::INSTR`
+### VISA
 
-### c) GPIB (ADLINK USB-3488A) — **kurulu ve dogrulanmis yol**
+NI-VISA kurulu bir XP'de `Arayuz = VISA` secilip **Kaynaklari tara** ile
+bulunan adres kullanilir (GPIB, `USB0::0x05E6::0x2636::<seri>::INSTR` veya
+`TCPIP0::<ip>::inst0::INSTR`).
 
-> **Calistigi dogrulanan yapilandirma:**
-> Keithley **2636B** (seri 4037576, firmware 3.0.3), ADLINK USB-3488A ile
-> GPIB adres 26 uzerinden, Windows 11 + Python 3.13:
-> ```
-> VISA kutuphanesi : @py          (pyvisa-py + gpib-ctypes)
-> VISA kaynagi     : GPIB0::26::INSTR
-> ```
-> Keithley I/O Layer kurulu olsa bile NI-VISA bu adaptoru **goremez**
-> (`Sistem VISA (bos) : BASARILI []`), pyvisa-py gorur.
+### Onemli
 
-
-> **Onemli:** USB-3488A bir ADLINK urunudur, National Instruments donanimi
-> degildir. NI-VISA ve Keithley I/O Layer **yalnizca NI GPIB donanimini**
-> destekler; bu adaptoru goremezler. Kurulu olmalari bu yolda ise yaramaz —
-> `Kaynaklari tara` bos doner (hata vermez, cunku VISA yuklenir).
-
-1. **ADLINK USB-3488A surucusunu** kurun. Aygit Yoneticisi'nde
-   "Evrensel Seri Yol Cihazlari" altinda `ADLINK USB-3488` gorunuyorsa
-   surucu kurulu demektir. Surucu, NI-488.2 uyumlu `gpib-32.dll` saglar.
-2. Keithley'in GPIB adresini kontrol edin
-   (`MENU → COMMUNICATION → GPIB → ADDRESS`), fabrika degeri **26**.
-3. Python tarafinda saf Python yolunu kurun — bu, `gpib-32.dll` uzerinden
-   calisir:
-
-   ```bat
-   pip install pyvisa-py gpib-ctypes
-   ```
-
-   (Hazir betik: `gpib-kurulum.bat`)
-4. Programda **VISA kutuphanesi** alanina `@py`, **VISA kaynagi** alanina
-   `GPIB0::26::INSTR` girin.
-
-**Iletisim kuruldugunun isareti:** Keithley'in on panelinde **REM** (remote)
-yazisi belirir. Yazmiyorsa cihaza hicbir komut ulasmamis demektir.
-
-`gpib-32.dll` bulunamiyorsa (teshis raporu soyler) ADLINK'in GPIB yazilim
-paketini eksiksiz kurun — LabVIEW'in calistigi PC'de kurulu olan paketin
-aynisi.
+- **LabVIEW'i kapatin.** Ayni anda iki program ayni GPIB cihazini
+  kullanamaz; LabVIEW aciksa zaman asimi (EABO) hatasi alinir.
+- Teshis raporundaki hata kodlari: `ENOL` = o adreste cihaz yok (adres /
+  kablo / cihaz kapali), `EABO` = cihaz cevap vermedi, `ENEB` = GPIB karti
+  bulunamadi (adaptor takili mi, surucu kurulu mu).
 
 ---
 

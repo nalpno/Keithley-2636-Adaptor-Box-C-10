@@ -9,3 +9,7 @@ dist/
 .DS_Store
 *.csv
 !config/*.json
+
+# XP surumu calisma dosyalari
+ayarlar_xp.json
+olcumler/

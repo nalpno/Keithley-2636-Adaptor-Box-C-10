@@ -1,292 +1,199 @@
-# UV Fotodedektor Olcum Arayuzu — Keithley 2636 + Adapter Box C 10
+# UV Fotodedektor Olcum Arayuzu — **Windows XP surumu**
 
-Keithley 2636 SourceMeter'i **USB, LAN veya GPIB** uzerinden yoneten, UV
-fotodedektor karakterizasyonu icin hazirlanmis masaustu arayuz.
+Keithley 2636B + Adapter Box C 10 ile UV fotodedektor I–V ve zaman tepkisi
+olcumleri icin arayuz. Bu dal (`claude/winxp-python34`), laboratuvardaki
+**Windows XP Professional SP3** bilgisayar icin hazirlanmis ayri bir surumdur.
 
-**Ne yapar:**
+Modern surum (Windows 10/11, PyQt5) `claude/inspiring-newton-m7ggeg` dalindadir
+ve bu daldan etkilenmez.
 
-- Gerilim uygulayip akim olcer (**V → I**) veya akim uygulayip gerilim olcer (**I → V**)
-- **I–V karakteristigini** canli grafikle cikarir (tek yon / cift yon / tekrarli)
-- **Karanlik ve UV altinda** alinan iki olcumu ortak gerilim ekseninde
-  karsilastirir, **fotoakimi (I_ph = I_UV − I_karanlik)** cikarir
-- Duyarlilik **R (A/W)**, **EQE (%)**, **dedektivite D\* (Jones)**, **NEP**,
-  **ac/kapa orani**, **fotoduyarlilik** hesaplar (dalga boyu ve optik guc girilir)
-- **Zaman tepkisi** (UV ac/kapa) kaydeder; **yukselme/dusme sureleri (%10–%90)**
-  ve on/off oranini bulur
-- Idealite faktoru **n**, doyma akimi **I₀** ve dogrultma oranini hesaplar
-- Her olcumu meta verisiyle birlikte **CSV** olarak kaydeder, grafik **PNG/PDF**
-  ve metin **rapor** cikartir
-- Cihaz olmadan denemek icin **simulasyon modu** icerir
+## Bu surumun ozelligi: hicbir paket kurulmaz
+
+| | Modern surum | **XP surumu** |
+|---|---|---|
+| Python | 3.9+ | **3.4.4 (32-bit)** |
+| Arayuz | PyQt5 + matplotlib | **Tkinter** (Python ile birlikte gelir) |
+| Hesaplama | numpy | **saf Python** |
+| Cihaz haberlesmesi | pyvisa / pyvisa-py / gpib-ctypes | **gpib-32.dll / visa32.dll dogrudan (ctypes)** |
+| `pip install` | gerekli | **gerekmez — internet de gerekmez** |
+
+Olcum dosyalari (CSV) iki surumde **ayni bicimdedir**: XP'de alinan olcum
+yeni PC'de, yeni PC'de alinan XP'de acilir.
 
 ---
 
-## Kurulum (Windows — laboratuvar PC'si)
+## 1. Python 3.4.4 kurulumu
 
-### 1. Python
+### Neden bu surum?
 
-Kurulu degilse <https://www.python.org/downloads/> adresinden **Python 3.9+**
-kurun. Kurulum ekraninda **“Add python.exe to PATH”** kutucugunu isaretlemeyi
-unutmayin. Kontrol:
+- **Python 3.4.4, Windows XP'yi destekleyen son Python surumudur** ve
+  Windows kurulum dosyasi yayinlanmis son 3.4 surumudur. Python 3.5 ve
+  sonrasi XP'de calismaz.
+- **32-bit** olmali. "Windows XP Professional Version 2002" 32-bit bir
+  isletim sistemidir (64-bit XP "Version 2003" olarak gorunur). Bilgisayarin
+  4 GB yerine **3.45 GB** RAM gostermesi de 32-bit isletim sisteminin
+  isaretidir.
 
-```bat
-python --version
-```
+### Indirme baglantisi
 
-### 2. Programi indirin (git ile — onerilen)
+**https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi**
+(32-bit Windows yukleyicisi, ~24 MB)
 
-ZIP indirip her seferinde klasore acmak yerine bir kez `git clone` yapin;
-sonraki guncellemeler tek tikla gelir.
+Surum sayfasi: https://www.python.org/downloads/release/python-344/
 
-**Git kurulu degilse:** <https://git-scm.com/download/win> → kurulumda tum
-varsayilanlar kabul edilebilir.
-
-Komut istemini acin (Baslat > `cmd`) ve calistirin:
-
-```bat
-cd /d C:\
-git clone -b claude/inspiring-newton-m7ggeg https://github.com/nalpno/Keithley-2636-Adaptor-Box-C-10.git Keithley_2636_adaptor_box_C_10
-cd Keithley_2636_adaptor_box_C_10
-```
-
-Bu, kodu `C:\Keithley_2636_adaptor_box_C_10` klasorune indirir. Depo ozel ise
-GitHub kullanici adi/parolasi (veya tarayici ile oturum) sorulur.
-
-**Sonraki guncellemeler:** klasordeki **`guncelle.bat`** dosyasina cift
-tiklayin — `git pull` yapar ve gerekirse paketleri gunceller. Elle yapmak
-isterseniz:
-
-```bat
-cd /d C:\Keithley_2636_adaptor_box_C_10
-git pull
-```
-
-> Bir klasorde hizlica komut istemi acmak icin: Dosya Gezgini'nde o klasoru
-> acin, adres cubuguna `cmd` yazip Enter'a basin.
-
-Git kullanmak istemezseniz: GitHub'da dal listesinden
-`claude/inspiring-newton-m7ggeg` secilir → **Code → Download ZIP**.
-
-### 3. Paketleri kurun
-
-Klasordeki **`kurulum.bat`** dosyasina cift tiklayin. Bu dosya:
-
-- `.venv` adinda yalitilmis bir Python ortami olusturur (sistem Python'unuzu
-  ve 4PP programini etkilemez),
-- `numpy`, `matplotlib`, `pyvisa`, `PyQt5` paketlerini kurar,
-- VISA/GPIB kurulumunu kontrol edip bulunan cihaz adreslerini yazar.
-
-Elle yapmak isterseniz:
-
-```bat
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 4. Baglantiyi test edin
-
-Cihazi USB ile takip acin, sonra **`test-baglanti.bat`** dosyasini calistirin.
-Betik VISA kaynaklarini tarar, cihaza baglanir ve kimligini (`*IDN?`) okur —
-**cikisi acmaz**, yani numune icin risk yoktur:
-
-```bat
-python baglanti_testi.py                 # kaynak tara + bagla + kimlik oku
-python baglanti_testi.py --olcum         # ek olarak guvenli olcum testi (±0.1 V, 1 mA limit)
-python baglanti_testi.py --kaynak "USB0::0x05E6::0x2636::<seri>::INSTR"
-```
-
-`--olcum` cikisi kisa sureligine acar; **numune bagli degilken** (acik devre)
-beklenen sonuc pA seviyesinde akimdir.
-
-### 5. Once simulasyonla deneyin
-
-**`baslat-simulasyon.bat`** — cihaz baglamadan arayuzu, taramayi ve analizleri
-denemenizi saglar. Buradaki her sey calisiyorsa kurulum tamamdir.
-
-### 6. Cihazla calistirin
-
-Keithley'i baglayip **`baslat.bat`** dosyasini calistirin, ardindan `Baglanti`
-sekmesinden `Kaynaklari tara` → `Bagla`.
-
-> **Python icin ayrica bir VISA arayuzu gerekir.** LabVIEW'in calisiyor olmasi
-> yetmez; LabVIEW kendi surucusunu kullanir. Baglanti sekmesindeki
-> **🔍 VISA teshis** dugmesi neyin eksik oldugunu soyler.
+> **Dikkat: XP'nin tarayicisi python.org ve GitHub'i acamaz** (bu siteler XP'nin
+> desteklemedigi TLS 1.2 ister).** Dosyayi **modern bilgisayarda indirip USB
+> bellekle** XP'ye tasiyin. Ayni sey program dosyalari icin de gecerli.
 >
-> - **USB ile:** Keithley I/O Layer (KIOL) veya NI-VISA kurun (Python ile ayni
->   bit genisliginde). Adres: `USB0::0x05E6::0x2636::<seri-no>::INSTR`
-> - **LAN ile:** surucu gerekmez — `pip install pyvisa-py`, VISA kutuphanesi
->   alanina `@py`, kaynak `TCPIP0::<ip>::inst0::INSTR`
-> - **GPIB (ADLINK USB-3488A) ile:** NI-VISA/KIOL bu adaptoru **goremez**.
->   **`gpib-kurulum.bat`** calistirin (pyvisa-py + gpib-ctypes kurar ve
->   baglantiyi dener); VISA kutuphanesi `@py`, kaynak `GPIB0::26::INSTR`
->
-> Ayrinti: [docs/hardware_setup.md](docs/hardware_setup.md) bolum 7.
+> `-amd64.msi` ile biten dosyayi **indirmeyin**; o 64-bit surumdur ve XP'de
+> calismaz.
 
-### Linux / macOS
+### Kurulum adimlari
 
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python run_gui.py --simulate     # deneme
-python run_gui.py                # cihazla
-```
+1. `python-3.4.4.msi` dosyasina cift tiklayin.
+2. **"Install for all users"** secin → Next.
+3. Klasor: **`C:\Python34\`** (varsayilani degistirmeyin) → Next.
+4. Bilesen listesinde:
+   - **Tcl/Tk** bileseni **secili kalmali** (varsayilan olarak secilidir —
+     arayuz bunu kullanir, kaldirmayin).
+   - Istege bagli: **"Add python.exe to Path"** secilebilir. Secilmese de
+     program `C:\Python34`'u kendisi bulur.
+5. Finish.
 
-### Kurulum sorunlari
+---
+
+## 2. Programi XP'ye kopyalama
+
+1. **Modern bilgisayarda** GitHub'da depoyu acin, dal listesinden
+   **`claude/winxp-python34`** secin → **Code → Download ZIP**.
+2. ZIP'i USB bellekle XP'ye tasiyin ve ornegin **`C:\Keithley_XP`**
+   klasorune cikarin.
+
+Git kurmak gerekmez. Guncelleme gerektiginde ayni adimlari tekrarlayin
+(`ayarlar_xp.json` ve `olcumler\` klasorunu yedekleyip yenisinin icine
+kopyalayin).
+
+---
+
+## 3. Calistirma
+
+Klasordeki `.bat` dosyalarina cift tiklayin:
+
+| Dosya | Ne yapar |
+|---|---|
+| **`teshis.bat`** | Ilk calistirilacak dosya. Python surumunu, GPIB/VISA surucusunu ve bagli cihazlari kontrol eder, ne yapilacagini yazar. |
+| **`test-baglanti.bat`** | Cihaza baglanir, kimligini okur. **Cikisi acmaz.** |
+| **`baslat.bat`** | Programi baslatir. |
+| `baslat-simulasyon.bat` | Cihaz olmadan deneme. |
+| `testleri-calistir.bat` | Programin kendi testlerini XP uzerinde calistirir. |
+
+Siyah konsol penceresi program acikken acik kalir; hata olursa mesaj orada
+gorunur. **Kapatmayin.**
+
+### Ilk baglanti
+
+1. **LabVIEW'i kapatin** — ayni GPIB cihazini iki program ayni anda
+   kullanamaz.
+2. `teshis.bat` → raporda `gpib-32.dll : BASARILI ['GPIB0::26::INSTR']`
+   gibi bir satir gormelisiniz.
+3. `baslat.bat` → **Baglanti** sekmesi:
+   - **Arayuz:** Otomatik (veya GPIB)
+   - **Kaynak:** `GPIB0::26::INSTR` (ya da **Kaynaklari tara**)
+   - **Bagla** → Keithley'in on panelinde **REM** yazisi yanar.
+4. **SMU ayarlari:** Kanal A, gerilim kaynagi, **4 uclu KAPALI**
+   (BNC1/BNC2 duzeninde SENSE uclari bagli degildir), limit `1e-3` A.
+5. **INTERLOCK bagli / kapak kapali** kutucugunu isaretleyin.
+
+Kablolama: [docs/hardware_setup.md](docs/hardware_setup.md) — kurulu ve
+LabVIEW ile dogrulanmis BNC1/BNC2 duzeni bolum 4'te.
+
+---
+
+## 4. Ozellikler
+
+Modern surumle ayni olcum ve analizler:
+
+- **I–V taramasi** — gerilim veya akim kaynagi, tek/cift yon, tekrar, canli grafik
+  (dogrusal / log|I|).
+- **Ikili olcum (karanlik → UV)** — karanlik tarama, "UV kaynagini acin"
+  uyarisi, UV taramasi, otomatik karsilastirma.
+- **Zaman tepkisi** — elle UV ac/kapa isaretleme veya digital I/O ile
+  otomatik shutter; yukselme/dusme sureleri, ac/kapa orani.
+- **Karsilastirma** — I_ph = I_UV − I_karanlik, R (A/W), EQE, D\*, NEP,
+  idealite faktoru, dogrultma orani.
+- **Acil durdurma** — pencerenin sag ustunde, **her sekmeden** erisilebilir.
+- **Guvenlik** — 60 V / 1 A sinirlari ve interlock onayi olmadan olcum baslamaz.
+
+### XP surumune ozgu farklar
+
+- **Rapor (.txt)** uc sutunludur: `Parametre / Deger / Birim`. Deger sutunu
+  saf sayidir; Excel'de *Veri > Metinden*, ayirici **Sekme** ile acin.
+- **Tablolarda Ctrl+C** secili satirlari (secim yoksa tumunu) kopyalar.
+- **Grafik** `.eps` olarak kaydedilir (PNG icin ek kutuphane gerekirdi).
+  EPS dosyasi Origin, Word ve Illustrator'da acilir.
+- Ayarlar programin klasorundeki `ayarlar_xp.json` dosyasinda, olcumler
+  `olcumler\` klasorunde tutulur — klasor USB bellekle tasinabilir.
+- Arayuz 1024×768 ekrana gore duzenlenmistir; sol paneller gerekirse kaydirilir.
+
+### Hesaplanan buyuklukler
+
+| Buyukluk | Baginti |
+|---|---|
+| Fotoakim | `I_ph = I_UV − I_karanlik` |
+| Duyarlilik | `R = |I_ph| / P_opt` (A/W) |
+| Kuantum verimi | `EQE = R · E_ph[eV]` (×100 → %) |
+| Dedektivite | `D* = R·√A / √(2q·I_karanlik)` (Jones, shot-gurultu sinirli) |
+| NEP | `√(2q·I_karanlik) / R` |
+
+R, EQE ve D\* **Analiz bias'i** alanindaki gerilime **en yakin** olcum
+noktasinda hesaplanir; kullanilan gercek bias tabloda "Bias gerilimi"
+satirinda yazar.
+
+---
+
+## 5. Sorun giderme
 
 | Belirti | Cozum |
 |---|---|
-| `'python' is not recognized` | Python PATH'e eklenmemis; Python'u “Add to PATH” isaretli olarak yeniden kurun |
-| `Could not locate a VISA implementation` | Bu PC'de VISA yok. **Baglanti → 🔍 VISA teshis** dugmesine basin, rapor hangi adimin eksik oldugunu soyler. Ozet: USB icin Keithley I/O Layer veya NI-VISA kurun; LAN icin `pip install pyvisa-py` + `@py` yeterlidir. Ayrinti: [docs/hardware_setup.md](docs/hardware_setup.md) bolum 7 |
-| `Kaynaklari tara` bos donuyor | Cihaz acik ve kablo takili mi? USB'de Keithley I/O Layer / NI-VISA kurulu mu? GPIB'de cihaz adresi dogru mu (`MENU → COMMUNICATION → GPIB`)? **🔍 VISA teshis** raporunu okuyun |
-| Birden fazla VISA kurulu, yanlisi kullaniliyor | Baglanti sekmesindeki **VISA kutuphanesi** alanina DLL yolunu yazin (orn. `C:\Windows\System32\visa64.dll`) |
-| `PyQt5` kurulamiyor | `pip install PySide6` yeterlidir; program otomatik olarak onu kullanir |
-| Grafik penceresi acilmiyor (Linux) | `sudo apt install libxcb-xinerama0 libgl1` |
-
----
-
-## Kullanim akisi
-
-### 1 · Baglanti ve Ayarlar
-
-1. **VISA kaynagi**: `GPIB0::26::INSTR` (2636'nin fabrika GPIB adresi 26).
-   `Kaynaklari tara` ile listeleyebilirsiniz.
-2. `Bagla` — cihaz kimligi (IDN) ekranda gorunur.
-3. **SMU ayarlari**: kanal (A/B), kaynak tipi, limit (compliance), NPLC,
-   filtre, 4 uclu olcum, otomatik kademe alt siniri, auto-zero.
-4. **Guvenlik**: `INTERLOCK bagli / kapak kapali` onayi isaretlenmeden olcum
-   baslamaz. `CIKISI HEMEN KAPAT` dugmesi her an cikisi keser.
-5. Alt kisimda **kablolama haritasi** (`config/wiring.json`) gosterilir.
-
-### 2 · I–V Olcumu
-
-- Numune adi, isik durumu (**Karanlik / UV altinda**), dalga boyu, optik guc,
-  aktif alan girilir.
-- Tarama: baslangic, bitis, nokta sayisi, cift yon, tekrar, adim beklemesi.
-- `Taramayi baslat` — egri nokta nokta canli cizilir, `Durdur` ile her an
-  kesilebilir. Y ekseni dogrusal / log|I| / symlog secilebilir.
-- **`Ikili olcum (karanlik → UV)`**: once karanlik taramayi yapar, sonra
-  “UV kaynagini acin” uyarisi verir, ardindan ayni taramayi UV altinda
-  tekrarlar ve dogrudan **Karsilastirma** sekmesine gecip farki cikarir.
-  Aradiginiz karanlik/aydinlik kiyaslamasinin en kisa yolu budur.
-- Olcumler bitince otomatik olarak CSV'ye kaydedilir (veri klasoru
-  `Dosya → Veri klasorunu sec` ile degistirilir).
-
-### 3 · Zaman Tepkisi
-
-Sabit bias altinda akim–zaman kaydi:
-
-- Elle: kayit sirasinda `UV ACIK` / `UV KAPALI` dugmeleriyle isik anlarini
-  isaretlersiniz; grafikte isikli pencereler golgelenir.
-- Otomatik: UV kaynagi/shutter Keithley digital I/O hattina bagliysa program
-  isigi kendisi ac/kapa eder (ilk bekleme / acik sure / kapali sure).
-- Bitince yukselme suresi (%10→%90), dusme suresi (%90→%10), on/off orani ve
-  (optik guc girilmisse) R, EQE, D\* tabloya yazilir.
-
-### 4 · Karsilastirma ve Analiz
-
-- A (karanlik) ve B (UV) olcumleri oturum listesinden veya CSV dosyasindan secilir.
-- `Karsilastir ve farki cikar` — iki egri ortak gerilim ekseninde
-  interpolasyonla eslestirilir (nokta sayilari farkli olsa da calisir).
-- Gosterim: I–V egrileri / fotoakim / ac-kapa orani / ham fark.
-- `Parametreleri hesapla` — secilen bias geriliminde tum fotodedektor
-  parametreleri.
-- Diyot analizi: secilen gerilim araliginda ln(I)–V uydurmasi ile **n** ve **I₀**,
-  ayrica dogrultma orani.
-- Cikti: fark verisi CSV, metin rapor, grafik PNG/PDF.
-
----
-
-## Hesaplanan buyuklukler
-
-| Buyukluk | Bagintii |
-|---|---|
-| Fotoakim | `I_ph = I_UV − I_karanlik` |
-| Ac/kapa orani | `|I_UV| / |I_karanlik|` |
-| Fotoduyarlilik | `(|I_UV| − |I_karanlik|) / |I_karanlik|` |
-| Foton enerjisi | `E = 1239.84 / λ[nm]` eV |
-| Duyarlilik | `R = I_ph / P_opt` (A/W) |
-| Kuantum verimi | `EQE = R · h·c / (q·λ) = R · E[eV]` (×100 → %) |
-| Dedektivite | `D* = R·√A / √(2·q·I_karanlik)` (Jones) |
-| NEP | `√(2·q·I_karanlik) / R` (W/Hz^0.5) |
-| Idealite | `ln I = ln I₀ + qV/(n·k·T)` egiminden |
-
-`D*` karanlik akim shot gurultusu sinirli varsayimla hesaplanir. Optik guc
-girilmezse R, EQE ve D\* hesaplanmaz (program uyari verir); fotoakim, oran ve
-I–V egrileri her durumda cikarilir.
-
----
-
-## Veri formati
-
-CSV dosyalari basliginda JSON meta veri tasir; hem Excel/Origin ile acilir hem
-de program tarafindan tum ayarlariyla geri yuklenir:
-
-```
-# UVPD-META:{"name": "ZnO-1", "kind": "iv", "light_state": "light",
-#            "wavelength_nm": 365.0, "optical_power_w": 2e-06, ...}
-time_s,voltage_V,current_A
-0.000000,-2,-1.2345e-11
-...
-```
-
----
-
-## Donanim
-
-Kablolama, triaks/guard baglantilari, interlock ve dusuk akim ipuclari icin:
-**[docs/hardware_setup.md](docs/hardware_setup.md)**
-
-Ozet (2 uclu olcum):
-
-| Keithley 2636 | Kablo | Adapter Box C 10 | Numune |
-|---|---|---|---|
-| Kanal A HI | 2600-ALG-2 | `TRX1` | Prob 1 (ust kontak) |
-| Kanal A LO | 2600-ALG-2 | `TRX2` | Prob 2 (alt kontak) |
-| Sasi | muz kablo | `CASE` | Hucre govdesi |
-
-Sinirlar: **60 V DC / 1 A DC** (kutu etiketi). Program bu sinirlari yazilimda
-da denetler.
+| `[HATA] Python 3.4 bulunamadi` | Python 3.4.4'u `C:\Python34` klasorune kurun (bolum 1). |
+| Teshiste `gpib-32.dll : BASARISIZ ... yuklenemedi` | GPIB adaptorunun/kartinin XP surucusu kurulu degil. |
+| `ENEB - GPIB karti bulunamadi` | USB-GPIB adaptoru takili mi? Aygit Yoneticisi'nde gorunuyor mu? |
+| `ENOL - bu adreste dinleyen cihaz yok` | Keithley acik mi, GPIB kablosu takili mi, adres 26 mi? |
+| `EABO - ... ZAMAN ASIMI` | LabVIEW acik olabilir, kapatin. Keithley'i kapatip acin. |
+| Arayuz acilmiyor, `tkinter` hatasi | Python kurulumunda Tcl/Tk bileseni kaldirilmis; yeniden kurup secin. |
+| Program penceresi ekrana sigmiyor | Pencereyi buyutun; sol panellerde kaydirma cubugu cikar. |
 
 ---
 
 ## Proje yapisi
 
 ```
-kurulum.bat                Windows kurulum betigi
-guncelle.bat               git pull ile programi gunceller
-gpib-kurulum.bat           ADLINK GPIB adaptoru icin pyvisa-py + gpib-ctypes
-baslat.bat                 programi calistirir
-baslat-simulasyon.bat      cihazsiz deneme modu
-test-baglanti.bat          cihaz baglantisini konsoldan dogrular
-run_gui.py                 arayuzu baslatir
-baglanti_testi.py          baglanti testi betigi
-uvpd/
-  instrument.py            Keithley 2636 TSP surucusu (pyvisa)
-  simulator.py             cihazsiz test icin sahte SMU (fotodiyot modeli)
-  measurement.py           I-V taramasi ve zaman tepkisi motorlari
-  analysis.py              karsilastirma, R/EQE/D*, rise-fall, diyot uydurma
-  dataset.py               veri kabi + meta verili CSV okuma/yazma
-  config.py                ayarlar ve kablolama haritasi
-  visa_diag.py             VISA/GPIB kurulum teshisi
-  gui/                     sekmeler, canli grafik, olcum is parcacigi
-config/wiring.json         kablolama haritasi (duzenlenebilir)
-docs/hardware_setup.md     donanim kurulumu
-tests/                     birim ve arayuz testleri
+baslat.bat / baslat-simulasyon.bat / test-baglanti.bat / teshis.bat / testleri-calistir.bat
+_python_bul.bat          Python 3.4'u bulur (diger .bat'lar kullanir)
+program.py               arayuzu baslatir
+baglanti_testi.py        konsol baglanti testi (--teshis ile surucu raporu)
+run_tests.py             testleri calistirir
+uvpd_xp/
+  transport.py           gpib-32.dll / visa32.dll (ctypes) haberlesme katmani
+  instrument.py          Keithley 2636 TSP surucusu
+  simulator.py           cihazsiz test icin sahte SMU
+  measurement.py         I-V taramasi ve zaman tepkisi
+  analysis.py            karsilastirma, R/EQE/D*, rise/fall (saf Python)
+  dataset.py             CSV okuma/yazma (modern surumle ayni bicim)
+  diag.py                surucu teshisi
+  console.py             XP konsolunda guvenli yazdirma
+  gui/                   Tkinter arayuzu
+config/wiring.json       kablolama haritasi
+docs/hardware_setup.md   donanim kurulumu
+tests/                   64 test (unittest; harici paket gerekmez)
 ```
 
-## Testler
+### Dogrulama
 
-```bash
-python -m pytest tests -q            # arayuz testleri dahil (offscreen calisir)
-```
-
-## Notlar ve sinirlar
-
-- 2600 serisi **TSP** (Lua) dili kullanir; surucu SCPI degil TSP komutlari gonderir.
-- Tarama nokta nokta yapilir (canli grafik ve anlik durdurma icin). Cok hizli
-  taramalar gerekirse cihaz ici `SweepVLinMeasureI` fonksiyonlari ile
-  hizlandirma eklenebilir.
-- Zaman tepkisinde en kucuk pratik ornekleme araligi GPIB gidis-gelisi ve NPLC
-  ile sinirlidir (~10–20 ms). Mikrosaniye mertebesinde tepki icin osiloskop
-  gerekir.
-- Program ayarlari `~/.uvpd_keithley/settings.json` dosyasinda saklanir.
+Kod, XP'deki Python 3.4.4 ile ayni dil surumu olan **Python 3.4.10** ile
+derlenip Tk 8.6 arayuzuyle test edilmistir (64 test; gercek Tk penceresinde
+ikili olcum, karsilastirma, zaman tepkisi ve acil durdurma dahil). GPIB ve
+VISA katmani, gercek DLL'lerin fonksiyon imzalarini taklit eden sahte
+suruculerle test edilmistir. **Gercek bir XP bilgisayarinda henuz
+calistirilmamistir** — ilk kullanimda `teshis.bat` ve `test-baglanti.bat`
+ciktilarini kontrol edin.
