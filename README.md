@@ -66,8 +66,11 @@ Surum sayfasi: https://www.python.org/downloads/release/python-344/
 
 1. **Modern bilgisayarda** GitHub'da depoyu acin, dal listesinden
    **`claude/winxp-python34`** secin → **Code → Download ZIP**.
-2. ZIP'i USB bellekle XP'ye tasiyin ve ornegin **`C:\Keithley_XP`**
-   klasorune cikarin.
+2. ZIP'i USB bellekle XP'ye tasiyin.
+3. **ZIP'i mutlaka ayiklayin:** ZIP dosyasina sag tiklayin → **Tumunu Ayikla**
+   (Extract All) → ornegin **`C:\Keithley_XP`**. ZIP'in icine girip
+   oradaki `.bat` dosyasina cift tiklamak **calismaz** — XP o dosyayi tek
+   basina calistirir, programin diger dosyalari yaninda olmaz.
 
 Git kurmak gerekmez. Guncelleme gerektiginde ayni adimlari tekrarlayin
 (`ayarlar_xp.json` ve `olcumler\` klasorunu yedekleyip yenisinin icine
@@ -88,7 +91,10 @@ Klasordeki `.bat` dosyalarina cift tiklayin:
 | `testleri-calistir.bat` | Programin kendi testlerini XP uzerinde calistirir. |
 
 Siyah konsol penceresi program acikken acik kalir; hata olursa mesaj orada
-gorunur. **Kapatmayin.**
+gorunur ve pencere siz bir tusa basana kadar kapanmaz. **Kapatmayin.**
+
+Beklenmeyen her hata ayrica program klasorundeki **`hata_kaydi.txt`**
+dosyasina yazilir; sorun bildirirken bu dosyayi gondermeniz yeterli.
 
 ### Ilk baglanti
 
@@ -155,6 +161,8 @@ satirinda yazar.
 
 | Belirti | Cozum |
 |---|---|
+| `.bat`'a tiklayinca pencere acilip hemen kapaniyor / hicbir sey olmuyor | ZIP ayiklanmamis (bolum 2, adim 3). Emin olmak icin: Baslat → Calistir → `cmd` → `cd C:\Keithley_XP` → `teshis.bat` yazin; pencere acik kalir ve mesaji okuyabilirsiniz. |
+| `[HATA] Program dosyalari bu klasorde bulunamadi` | Ayni sebep: ZIP'in icinden calistiriliyor. Once ayiklayin. |
 | `[HATA] Python 3.4 bulunamadi` | Python 3.4.4'u `C:\Python34` klasorune kurun (bolum 1). |
 | Teshiste `gpib-32.dll : BASARISIZ ... yuklenemedi` | GPIB adaptorunun/kartinin XP surucusu kurulu degil. |
 | `ENEB - GPIB karti bulunamadi` | USB-GPIB adaptoru takili mi? Aygit Yoneticisi'nde gorunuyor mu? |
@@ -169,7 +177,6 @@ satirinda yazar.
 
 ```
 baslat.bat / baslat-simulasyon.bat / test-baglanti.bat / teshis.bat / testleri-calistir.bat
-_python_bul.bat          Python 3.4'u bulur (diger .bat'lar kullanir)
 program.py               arayuzu baslatir
 baglanti_testi.py        konsol baglanti testi (--teshis ile surucu raporu)
 run_tests.py             testleri calistirir
@@ -182,16 +189,17 @@ uvpd_xp/
   dataset.py             CSV okuma/yazma (modern surumle ayni bicim)
   diag.py                surucu teshisi
   console.py             XP konsolunda guvenli yazdirma
+  errorlog.py            beklenmeyen hatalari hata_kaydi.txt'ye yazar
   gui/                   Tkinter arayuzu
 config/wiring.json       kablolama haritasi
 docs/hardware_setup.md   donanim kurulumu
-tests/                   64 test (unittest; harici paket gerekmez)
+tests/                   66 test (unittest; harici paket gerekmez)
 ```
 
 ### Dogrulama
 
 Kod, XP'deki Python 3.4.4 ile ayni dil surumu olan **Python 3.4.10** ile
-derlenip Tk 8.6 arayuzuyle test edilmistir (64 test; gercek Tk penceresinde
+derlenip Tk 8.6 arayuzuyle test edilmistir (66 test; gercek Tk penceresinde
 ikili olcum, karsilastirma, zaman tepkisi ve acil durdurma dahil). GPIB ve
 VISA katmani, gercek DLL'lerin fonksiyon imzalarini taklit eden sahte
 suruculerle test edilmistir. **Gercek bir XP bilgisayarinda henuz

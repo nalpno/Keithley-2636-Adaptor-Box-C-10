@@ -63,6 +63,24 @@ class SourceRules(unittest.TestCase):
                     bad.append("{0}: {1}".format(os.path.relpath(path, ROOT), what))
         self.assertEqual(bad, [])
 
+    def test_launchers_never_close_silently(self):
+        """Her baslatici: dosya kontrolu yapar, her hata yolunda bekler (pause),
+        baska bir .bat dosyasina bagimli degildir (ZIP icinden calistirma)."""
+        launchers = ["baslat.bat", "baslat-simulasyon.bat", "test-baglanti.bat",
+                     "teshis.bat", "testleri-calistir.bat"]
+        for name in launchers:
+            with io.open(os.path.join(ROOT, name), encoding="ascii") as fh:
+                text = fh.read()
+            self.assertIn('if not exist "%~dp0program.py" goto eksik', text, name)
+            self.assertNotIn("call ", text.lower(), name)
+            for label in (":eksik", ":pyyok", ":hata", ":son"):
+                self.assertIn(label, text, name)
+            son = text[text.index(":son"):]
+            self.assertIn("pause", son, name)
+            # hicbir yol :eof'a pause olmadan erken cikmamali
+            self.assertNotIn("if not defined PY goto :eof", text, name)
+        self.assertFalse(os.path.exists(os.path.join(ROOT, "_python_bul.bat")))
+
     def test_batch_files_use_crlf(self):
         for path in project_files((".bat",)):
             with io.open(path, "rb") as fh:

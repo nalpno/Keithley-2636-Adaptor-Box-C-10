@@ -90,6 +90,9 @@ class App(object):
         s.on("datasets", self._refresh_list)
         s.on("busy", self._on_busy)
         root.protocol("WM_DELETE_WINDOW", self.on_close)
+        # Bir dugmeye basildiginda olusan hata yalnizca konsola yazilip
+        # "hicbir sey olmadi" izlenimi vermesin: ekranda goster + dosyaya yaz.
+        root.report_callback_exception = self._on_tk_error
 
         s.log("UV fotodedektor arayuzu (XP surumu) v{0} hazir. Python {1}".format(
             __version__, sys.version.split()[0]))
@@ -167,6 +170,21 @@ class App(object):
                 b.config(state="disabled")
         else:
             c._on_connection(self.session.connected)
+
+    def _on_tk_error(self, exc_type, exc_value, tb):
+        import traceback
+        from ..errorlog import write_error
+        text = "".join(traceback.format_exception(exc_type, exc_value, tb))
+        sys.stderr.write(text)
+        path = write_error(text, "arayuz olayi")
+        self.session.log("HATA: {0}: {1}".format(exc_type.__name__, exc_value))
+        msg = "{0}: {1}".format(exc_type.__name__, exc_value)
+        if path:
+            msg += "\n\nAyrinti su dosyaya yazildi:\n{0}".format(path)
+        try:
+            error(self.root, "Beklenmeyen hata", msg)
+        except tk.TclError:
+            pass
 
     def emergency_off(self):
         """Acil durdurma: olcum suruyorsa durdur (cikis dongu sonunda kapanir),

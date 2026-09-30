@@ -148,4 +148,14 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except Exception:
+        from uvpd_xp.errorlog import log_exception
+        _text, _path = log_exception("baglanti_testi")
+        print("\n[HATA] Beklenmeyen hata:\n\n" + _text)
+        if _path:
+            print("Bu hata su dosyaya da yazildi: {0}".format(_path))
+        sys.exit(1)

@@ -141,6 +141,26 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(len(app.session.datasets), 1)
         self.assertLess(len(app.session.datasets[0]), 2000)
 
+    def test_callback_error_is_shown_and_logged(self):
+        from uvpd_xp import errorlog
+        from uvpd_xp.gui import app as app_mod
+        shown = []
+        orig_err, orig_log = app_mod.error, errorlog.LOG_PATH
+        app_mod.error = lambda parent, title, text: shown.append(text)
+        errorlog.LOG_PATH = os.path.join(self.tmp, "hata_kaydi.txt")
+        try:
+            def bad():
+                raise ValueError("deneme hatasi")
+            self.root.after(0, bad)
+            pump(self.root, lambda: bool(shown), 5)
+        finally:
+            app_mod.error = orig_err
+            errorlog.LOG_PATH = orig_log
+        self.assertTrue(shown, "hata kullaniciya gosterilmedi")
+        self.assertIn("deneme hatasi", shown[0])
+        with open(os.path.join(self.tmp, "hata_kaydi.txt")) as fh:
+            self.assertIn("ValueError: deneme hatasi", fh.read())
+
     def test_plot_log_scale_and_empty(self):
         p = self.app.tab_iv.plot
         p.clear()

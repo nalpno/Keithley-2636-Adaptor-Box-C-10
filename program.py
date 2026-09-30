@@ -16,7 +16,21 @@ if sys.version_info[:2] < (3, 3):
                      % sys.version.split()[0])
     sys.exit(1)
 
-from uvpd_xp.gui.app import run  # noqa: E402
+
+def main():
+    try:
+        from uvpd_xp.gui.app import run
+        return run()
+    except SystemExit:
+        raise
+    except Exception:
+        from uvpd_xp.errorlog import log_exception
+        text, path = log_exception("program baslatilirken")
+        sys.stderr.write("\n[HATA] Program baslatilamadi:\n\n" + text + "\n")
+        if path:
+            sys.stderr.write("Bu hata su dosyaya da yazildi: {0}\n".format(path))
+        return 1
+
 
 if __name__ == "__main__":
-    sys.exit(run())
+    sys.exit(main())
