@@ -8,4 +8,5 @@ build/
 dist/
 .DS_Store
 *.csv
+!tests/data/*.csv
 !config/*.json

@@ -11,11 +11,13 @@ from ..qtcompat import QtCore, QtGui, QtWidgets
 from .analysis_tab import AnalysisTab
 from .connection_tab import ConnectionTab
 from .iv_tab import IVTab
+from .scope_tab import ScopeTab
 from .session import Session
 from .transient_tab import TransientTab
 from .widgets import message
 
-APP_TITLE = "UV Fotodedektor Olcum Arayuzu — Keithley 2636 / Adapter Box C 10"
+APP_TITLE = ("UV Fotodedektor Olcum Arayuzu v2 — Keithley 2636 / Adapter Box C 10 "
+             "+ osiloskop darbe analizi")
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -34,10 +36,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tab_iv = IVTab(self.session)
         self.tab_tr = TransientTab(self.session)
         self.tab_an = AnalysisTab(self.session)
+        self.tab_scope = ScopeTab(self.session)
         self.tabs.addTab(self.tab_conn, "1 · Baglanti ve Ayarlar")
         self.tabs.addTab(self.tab_iv, "2 · I–V Olcumu")
         self.tabs.addTab(self.tab_tr, "3 · Zaman Tepkisi")
         self.tabs.addTab(self.tab_an, "4 · Karsilastirma ve Analiz")
+        self.tabs.addTab(self.tab_scope, "5 · Osiloskop Darbe Analizi")
         self.setCentralWidget(self.tabs)
 
         # ---------------- olcum listesi ----------------
@@ -124,7 +128,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 f"UV Fotodedektor Olcum Arayuzu v{__version__}\n\n"
                 "Keithley 2636 (TSP, GPIB/VISA) + Adapter Box C 10\n"
                 "I–V karakteristigi, karanlik/UV karsilastirmasi, fotoakim,\n"
-                "duyarlilik (A/W), EQE, D*, zaman tepkisi.\n\n"
+                "duyarlilik (A/W), EQE, D*, zaman tepkisi.\n"
+                "v2: osiloskop CSV'sinden darbe analizi (Keithley 3390 +\n"
+                "UV lamba + Thorlabs AMP120): tepki suresi, R, EQE, NEP, D*.\n\n"
                 "Sinirlar: 60 V DC / 1 A DC (Adapter Box C 10).")
 
     def _wiring_path(self) -> None:

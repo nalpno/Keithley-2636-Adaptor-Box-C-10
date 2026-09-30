@@ -3,6 +3,16 @@
 Keithley 2636 SourceMeter'i **USB, LAN veya GPIB** uzerinden yoneten, UV
 fotodedektor karakterizasyonu icin hazirlanmis masaustu arayuz.
 
+> **Surum 2 (bu dal: `claude/win11-v2-osiloskop`)** — v1'in tum ozelliklerine
+> ek olarak **5. sekme: Osiloskop Darbe Analizi**. Keithley 3390 kare dalgasiyla
+> darbelenen UV lamba altinda, Thorlabs AMP120 ciktisinin osiloskop (Rigol
+> DS3100 vb.) CSV kaydindan **tepki suresi, fotoakim, duyarlilik, EQE, NEP ve
+> D\*** hesaplar. Ilk dort sekme v1 ile aynidir.
+>
+> v1 `claude/inspiring-newton-m7ggeg` dalinda **degismeden** durur. Iki surumu
+> yan yana kullanmak icin v2'yi **ayri bir klasore** indirin (bkz.
+> [v2 kurulumu](#v2-kurulumu-v1in-yanina)).
+
 **Ne yapar:**
 
 - Gerilim uygulayip akim olcer (**V → I**) veya akim uygulayip gerilim olcer (**I → V**)
@@ -14,6 +24,10 @@ fotodedektor karakterizasyonu icin hazirlanmis masaustu arayuz.
 - **Zaman tepkisi** (UV ac/kapa) kaydeder; **yukselme/dusme sureleri (%10–%90)**
   ve on/off oranini bulur
 - Idealite faktoru **n**, doyma akimi **I₀** ve dogrultma oranini hesaplar
+- **(v2)** Osiloskop CSV'sinden **darbe analizi**: periyot/frekans/doluluk,
+  %10–%90 yukselme/dusme (tek tek kenarlar + cevrim ortalamasi), ustel zaman
+  sabitleri, lamba→sinyal gecikmesi, fotoakim (I = V/G), R, EQE, gurultu,
+  SNR, NEP, D\*
 - Her olcumu meta verisiyle birlikte **CSV** olarak kaydeder, grafik **PNG/PDF**
   ve metin **rapor** cikartir
 - Cihaz olmadan denemek icin **simulasyon modu** icerir
@@ -65,6 +79,27 @@ git pull
 
 Git kullanmak istemezseniz: GitHub'da dal listesinden
 `claude/inspiring-newton-m7ggeg` secilir → **Code → Download ZIP**.
+
+### v2 kurulumu (v1'in yanina)
+
+v1 zaten `C:\Keithley_2636_adaptor_box_C_10` klasorunde kuruluysa ona
+dokunmadan v2'yi ikinci bir klasore indirin:
+
+```bat
+cd /d C:\
+git clone -b claude/win11-v2-osiloskop https://github.com/nalpno/Keithley-2636-Adaptor-Box-C-10.git Keithley_v2
+cd Keithley_v2
+kurulum.bat
+```
+
+Sonra `C:\Keithley_v2\baslat.bat` v2'yi, eski klasordeki `baslat.bat` v1'i
+acar. Iki klasorun `guncelle.bat` dosyalari yalnizca kendi surumunu gunceller.
+(ADLINK GPIB icin v2 klasorunde de bir kez `gpib-kurulum.bat` calistirin.)
+Ayarlar (`%USERPROFILE%\.uvpd_keithley\settings.json`) ortaktir; v2'nin
+ekledigi alanlari v1 yok sayar.
+
+Git olmadan: GitHub'da dal listesinden `claude/win11-v2-osiloskop` → **Code →
+Download ZIP**, ayri bir klasore acin, `kurulum.bat`.
 
 ### 3. Paketleri kurun
 
@@ -194,6 +229,84 @@ Sabit bias altinda akim–zaman kaydi:
   ayrica dogrultma orani.
 - Cikti: fark verisi CSV, metin rapor, grafik PNG/PDF.
 
+### 5 · Osiloskop Darbe Analizi (v2)
+
+Cihaz baglantisi **gerekmez**; osiloskoptan alinan CSV dosyasiyla calisir.
+
+**Duzen:** Keithley 3390 kare dalga → UV lamba surucusu ve osiloskop **CH1**;
+fotodedektor → **Thorlabs AMP120** (akim → gerilim) → osiloskop **CH2**.
+
+1. **Osiloskop CSV dosyasi ac…** (veya dosyayi pencereye surukleyin). Rigol
+   DS1000Z/DS2000/DS3100/DS4000 bicimleri (`X,CH1,CH2` + birim satiri veya
+   `Start/Increment`) ve `Time(s),CH1(V)` gibi basliklar okunur; mV/µs gibi
+   birimler SI'ya cevrilir.
+2. **Kanallar:** sinyal = CH2 (AMP120), referans = CH1 (lamba surusu).
+   Referans kaydetmediyseniz "(yok — sinyalin kendisi)" secin; kenarlar sinyalden
+   bulunur (bu durumda gecikme olculemez).
+3. **Yukseltec:** AMP120 kazanci **1e5 V/A** (100 kV/A). Osiloskop girisi
+   **50 Ω** ise kutucugu isaretleyin — AMP120'nin 50 Ω cikis direnci yuzunden
+   etkin kazanc **yariya** iner. Osiloskop girisi 1 MΩ ise isaretlemeyin.
+   CH2 **AC kuplajli** ise (ekranda `CH2 ~`) "DC kuplajli" kutucugunu bos
+   birakin: mutlak seviye kaybolur, fotoakim **genlikten (ΔV)** hesaplanir.
+4. **Isik ve dedektor:** dalga boyu, **dedektore dusen** optik guc, aktif alan.
+   Keithley I–V olcumunden ayni bias'taki karanlik akimi girerseniz shot-gurultu
+   D\* de hesaplanir.
+5. **Analiz et** — dosya acilinca otomatik de yapilir.
+
+**Gosterimler:** dalga formu (lamba acik alanlar mor, V_on/V_off cizgileri,
+%50 gecisleri), ortalama kenarlar (normalize, %10/%90 isaretli), ortalama darbe
+(bir periyot), tek tek kenar sureleri.
+
+**Cikti:** rapor (.txt), kenar tablosu (.csv — her kenarin t10/t50/t90, sure,
+gecikme), ortalama dalga (.csv), grafik (.png/.pdf), tabloyu panoya kopyala
+(Excel'e yapistirilir).
+
+**Nasil hesaplanir:**
+
+- **Kenarlar** referans kanaldan bulunur: 5 noktali medyan filtre + histerezisli
+  esik (tek orneklik sicramalar ve kenar titresimi elenir), kenar zamani %50
+  gecisi (interpolasyonlu).
+- **Seviyeler:** her yarim periyodun son %30'u (plato payi) ortalanir;
+  V_on/V_off tum cevrimlerin ortancasidir.
+- **Yukselme/dusme (%10–%90):** her kenar kendi onceki ve sonraki platosuna gore
+  olculur (tek tek kenarlar: ort ± std). Ayrica kenarlar **sinyalin kendi %50
+  noktasina hizalanip** ortalanir (tetik titresimi ortalamayi genisletmez) —
+  tabloda "cevrim ortalamasi" satiri budur ve gurultuye en dayanikli degerdir.
+- **Ustel uydurma:** ortalama kenara tek ustel τ; ikinci (yavas) bilesen
+  istatistiksel olarak anlamliysa (F-testi) τ_hizli / τ_yavas ve paylari.
+  Dusmede yavas bir kuyruk varsa %10–%90 suresi buna cok duyarlidir; o zaman
+  τ degerlerini raporlayin.
+- **Sistem siniri:** AMP120'nin bant genisligi 100 kHz → yukselme suresi
+  ≈ 0.35/100 kHz ≈ **3.5 µs**. Bu deger "Sistem yukselme suresi" alaninda
+  girilidir ve `t_det = √(t_olc² − t_sis²)` ile cikarilir. Olculen sure bu
+  sinira yakinsa program uyarir: **dedektor daha hizli olabilir**, olcum
+  yukseltecle sinirlidir.
+- **Gurultu:** plato pencerelerinde egilim cikarilmis RMS. Hem tam bantta hem
+  **B icinde** (FFT ile, varsayilan 100 kHz = AMP120 bandi) verilir; B disindaki
+  gurultu dedektorden gelemez (yukseltec o frekanslari gecirmez), osiloskoba
+  giren parazittir. NEP, D\* ve SNR **B icindeki karanlik (lamba kapali)
+  gurultuyle** hesaplanir.
+- **ADC cift/tek ornek ofseti:** bazi osiloskoplarda ardisik ornekler arasinda
+  sabit bir fark olur (araya-girmeli ADC). Otomatik bulunur, cikarilir ve
+  raporda yazilir.
+
+| Buyukluk | Baginti |
+|---|---|
+| Fotoakim | `I_ph = abs(V_on − V_off) / G` |
+| Duyarlilik | `R = I_ph / P_opt` |
+| EQE | `R · 1239.84 / λ[nm] · 100 %` |
+| Gurultu akimi | `i_n = σ_V(B) / G` |
+| NEP (olculen) | `i_n / R` (W, B icinde); `/ √B` → W/√Hz |
+| D\* (olculen) | `√(A·B) / NEP` (Jones) — toplam gurultuyle, alt sinir |
+| D\* (shot) | `R·√A / √(2q·I_karanlik)` — karanlik akim girildiyse |
+| Bant genisligi | `f₋₃dB ≈ 0.35 / t_r`, `τ ≈ t_r / 2.2` |
+
+**Iyi kayit icin ipuclari:** osiloskop ekranina 5–20 periyot sigdirin; kenar
+suresini hassas olcmek icin ayrica zaman olcegini kucultup (kenari buyutup)
+ikinci bir kayit alin — yukselme suresi en az ~10 ornek icermeli. Gurultu
+yuksekse osiloskopta **Average** modu veya **20 MHz bant siniri** acin, ya da
+"Yumusatma" ayarini 3–5 yapin (cok buyuk degerler kenarlari yavaslatir).
+
 ---
 
 ## Hesaplanan buyuklukler
@@ -265,13 +378,16 @@ uvpd/
   simulator.py             cihazsiz test icin sahte SMU (fotodiyot modeli)
   measurement.py           I-V taramasi ve zaman tepkisi motorlari
   analysis.py              karsilastirma, R/EQE/D*, rise-fall, diyot uydurma
+  scope.py                 (v2) osiloskop CSV okuma ve darbe analizi
   dataset.py               veri kabi + meta verili CSV okuma/yazma
   config.py                ayarlar ve kablolama haritasi
   visa_diag.py             VISA/GPIB kurulum teshisi
   gui/                     sekmeler, canli grafik, olcum is parcacigi
+    scope_tab.py           (v2) 5. sekme: osiloskop darbe analizi
 config/wiring.json         kablolama haritasi (duzenlenebilir)
 docs/hardware_setup.md     donanim kurulumu
 tests/                     birim ve arayuz testleri
+  data/                    ornek Rigol DS3100 kaydi (test verisi)
 ```
 
 ## Testler

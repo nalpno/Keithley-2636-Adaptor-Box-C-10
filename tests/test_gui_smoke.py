@@ -146,3 +146,49 @@ def test_resource_combo_has_no_fake_presets(app):
     assert "USB0::0x05E6::0x2636::INSTR" not in items
     assert len(items) <= 1
     win.close()
+
+
+def test_scope_tab_loads_csv_and_exports(app, tmp_path):
+    """v2: osiloskop CSV'si yuklenir, analiz edilir, tum gosterimler cizilir."""
+    from uvpd.gui.main_window import MainWindow
+    from uvpd.gui import scope_tab as st
+
+    data = os.path.join(os.path.dirname(__file__), "data", "rigol_ds3100_ACOPE_01.csv")
+    win = MainWindow(simulate=True)
+    win.session.settings["data_dir"] = str(tmp_path)
+    tab = win.tab_scope
+    assert win.tabs.indexOf(tab) == 4          # eski 4 sekme yerinde kaldi
+    tab.load50.setChecked(False)               # onceki calismadan kalan ayar olmasin
+    tab.gain.setValue(1e5)
+
+    assert tab.load_file(data)
+    assert tab.signal_ch.currentData() == "CH2"
+    assert tab.ref_ch.currentData() == "CH1"
+    res = tab.result
+    assert res is not None and res.n_cycles == 5
+    rows = dict((tab.table.item(r, 0).text(), tab.table.item(r, 1).text())
+                for r in range(tab.table.rowCount()))
+    assert rows["Periyot"] == "208 µs"
+    assert "A/W" in rows["Duyarlilik R = I_ph / P"]
+
+    for idx in range(tab.view.count()):
+        tab.view.setCurrentIndex(idx)
+        app.processEvents()
+
+    # 50 Ω secenegi fotoakimi iki katina cikarir
+    i1 = res.photocurrent
+    tab.load50.setChecked(True)
+    tab.analyze()
+    assert tab.result.photocurrent == pytest.approx(2 * i1)
+    assert win.session.settings["scope"]["load_50ohm"] is True
+
+    # referans yok secenegi
+    tab.ref_ch.setCurrentIndex(tab.ref_ch.findData(st.NO_REF))
+    tab.analyze()
+    assert tab.result.settings.reference is None
+
+    for kind, name in (("report", "r.txt"), ("edges", "e.csv"),
+                       ("avg", "a.csv"), ("png", "g.png")):
+        path = tab.export_to(kind, str(tmp_path / name))
+        assert os.path.getsize(path) > 100
+    win.close()
