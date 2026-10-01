@@ -14,9 +14,11 @@ from .analysis_tab import AnalysisTab
 from .common import Session, error, info, warn
 from .connection_tab import ConnectionTab
 from .iv_tab import IVTab
+from .scope_tab import ScopeTab
 from .transient_tab import TransientTab
 
-TITLE = "UV Fotodedektor Olcumu - Keithley 2636 / Adapter Box C 10 (XP surumu)"
+TITLE = ("UV Fotodedektor Olcumu v2 - Keithley 2636 / Adapter Box C 10 "
+         "+ osiloskop darbe analizi (XP surumu)")
 
 
 class App(object):
@@ -52,10 +54,12 @@ class App(object):
         self.tab_an = AnalysisTab(self.nb, self.session)
         self.tab_iv = IVTab(self.nb, self.session, on_compare=self._compare_requested)
         self.tab_tr = TransientTab(self.nb, self.session)
+        self.tab_scope = ScopeTab(self.nb, self.session)
         self.nb.add(self.tab_conn, text=" 1 - Baglanti ve Ayarlar ")
         self.nb.add(self.tab_iv, text=" 2 - I-V Olcumu ")
         self.nb.add(self.tab_tr, text=" 3 - Zaman Tepkisi ")
         self.nb.add(self.tab_an, text=" 4 - Karsilastirma ve Analiz ")
+        self.nb.add(self.tab_scope, text=" 5 - Osiloskop Darbe Analizi ")
         top.add(self.nb, weight=5)
 
         side = ttk.Labelframe(top, text="Olcumler", padding=4)
@@ -138,6 +142,7 @@ class App(object):
         info(self.root, "Hakkinda",
              "UV Fotodedektor Olcum Arayuzu - XP surumu v{0}\n\n"
              "Keithley 2636 (TSP) + Adapter Box C 10\n"
+             "v2: osiloskop CSV darbe analizi (3390 + UV lamba + AMP120)\n"
              "Python {1} / Tk {2}\n\n"
              "Harici paket gerektirmez: GPIB icin gpib-32.dll,\n"
              "VISA icin visa32.dll dogrudan kullanilir.\n\n"

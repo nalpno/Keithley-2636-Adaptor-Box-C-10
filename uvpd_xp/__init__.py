@@ -7,9 +7,10 @@ Harici paket GEREKTIRMEZ (numpy, matplotlib, PyQt, pyvisa yok):
     simulator   : cihazsiz test icin sahte SMU
     measurement : I-V taramasi ve zaman tepkisi
     analysis    : karsilastirma, R, EQE, D*, NEP, rise/fall (saf Python)
+    scope       : osiloskop CSV darbe analizi (v2; 3390 + UV lamba + AMP120)
     dataset     : CSV okuma/yazma (modern surumle ayni bicim)
     diag        : surucu teshisi
     gui         : Tkinter arayuzu
 """
 
-__version__ = "1.0.0-xp"
+__version__ = "2.0.0-xp"

@@ -161,6 +161,49 @@ class GuiTests(unittest.TestCase):
         with open(os.path.join(self.tmp, "hata_kaydi.txt")) as fh:
             self.assertIn("ValueError: deneme hatasi", fh.read())
 
+    def test_scope_tab_loads_csv_and_exports(self):
+        """v2: osiloskop CSV'si yuklenir, analiz edilir, tum gosterimler cizilir."""
+        from uvpd_xp.gui import scope_tab as st
+        data = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data",
+                            "rigol_ds3100_ACOPE_01.csv")
+        app = self.app
+        tab = app.tab_scope
+        self.assertEqual(app.nb.index(tab), 4)          # eski 4 sekme yerinde kaldi
+        app.nb.select(tab)
+        tab.load50.set(False)
+        tab.gain.set(1e5)
+        self.assertTrue(tab.load_file(data))
+        self.assertEqual(tab.signal_ch.get(), "CH2")
+        self.assertEqual(tab.ref_ch.get(), "CH1")
+        res = tab.result
+        self.assertEqual(res.n_cycles, 5)
+        rows = dict(tab.table.rows())
+        self.assertEqual(rows["Periyot"], "208 us")
+        self.assertIn("A/W", rows["Duyarlilik R = I_ph / P"])
+
+        for key in (st.VIEW_WAVE, st.VIEW_WAVE_I, st.VIEW_EDGES, st.VIEW_CYCLE,
+                    st.VIEW_PER_EDGE):
+            tab.set_view(key)
+            self.root.update()
+            self.assertGreater(len(tab.plot.canvas.find_all()), 20, key)
+
+        i1 = res.photocurrent
+        tab.load50.set(True)
+        tab.analyze()
+        self.assertAlmostEqual(tab.result.photocurrent / i1, 2.0)
+        self.assertTrue(self.app.session.settings["scope"]["load_50ohm"])
+
+        tab.ref_ch.set(st.NO_REF)
+        tab.analyze()
+        self.assertIsNone(tab.result.settings.reference)
+
+        for kind, name in (("report", "r.txt"), ("edges", "e.csv"),
+                           ("avg", "a.csv"), ("eps", "g.eps")):
+            path = tab.export_to(kind, os.path.join(self.tmp, name))
+            self.assertGreater(os.path.getsize(path), 100)
+        tab.copy_table()
+        self.assertIn("Periyot", self.root.clipboard_get())
+
     def test_plot_log_scale_and_empty(self):
         p = self.app.tab_iv.plot
         p.clear()

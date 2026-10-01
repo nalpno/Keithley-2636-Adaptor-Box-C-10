@@ -1,4 +1,4 @@
-# UV Fotodedektor Olcum Arayuzu — **Windows XP surumu**
+# UV Fotodedektor Olcum Arayuzu — **Windows XP surumu v2**
 
 Keithley 2636B + Adapter Box C 10 ile UV fotodedektor I–V ve zaman tepkisi
 olcumleri icin arayuz. Bu dal (`claude/winxp-python34`), laboratuvardaki
@@ -6,6 +6,19 @@ olcumleri icin arayuz. Bu dal (`claude/winxp-python34`), laboratuvardaki
 
 Modern surum (Windows 10/11, PyQt5) `claude/inspiring-newton-m7ggeg` dalindadir
 ve bu daldan etkilenmez.
+
+> **v2 (bu dal: `claude/winxp-v2-osiloskop`)** — XP v1'in tum ozelliklerine ek
+> olarak **5. sekme: Osiloskop Darbe Analizi** (bkz. [bolum 4b](#4b-osiloskop-darbe-analizi-v2)).
+> Ilk dort sekme v1 ile aynidir. XP v1 `claude/winxp-python34` dalinda
+> **degismeden** durur; Win11 karsiligi `claude/win11-v2-osiloskop` dalidir ve
+> iki surum ayni dosyada **ayni sonuclari** verir.
+>
+> **Dogrudan ZIP (v2):**
+> https://github.com/nalpno/Keithley-2636-Adaptor-Box-C-10/archive/refs/heads/claude/winxp-v2-osiloskop.zip
+>
+> v1 kurulu ise ona dokunmayin; v2'yi **ayri bir klasore** ayiklayin (orn.
+> `C:\Keithley_XP_v2`). Iki klasorun ayar dosyalari (`ayarlar_xp.json`) ve
+> `olcumler\` klasorleri birbirinden bagimsizdir.
 
 ## Bu surumun ozelligi: hicbir paket kurulmaz
 
@@ -65,7 +78,8 @@ Surum sayfasi: https://www.python.org/downloads/release/python-344/
 ## 2. Programi XP'ye kopyalama
 
 1. **Modern bilgisayarda** GitHub'da depoyu acin, dal listesinden
-   **`claude/winxp-python34`** secin → **Code → Download ZIP**.
+   **`claude/winxp-v2-osiloskop`** secin → **Code → Download ZIP** (veya
+   yukaridaki dogrudan ZIP baglantisi). v1 icin `claude/winxp-python34`.
 2. ZIP'i USB bellekle XP'ye tasiyin.
 3. **ZIP'i mutlaka ayiklayin:** ZIP dosyasina sag tiklayin → **Tumunu Ayikla**
    (Extract All) → ornegin **`C:\Keithley_XP`**. ZIP'in icine girip
@@ -141,6 +155,54 @@ Modern surumle ayni olcum ve analizler:
   `olcumler\` klasorunde tutulur — klasor USB bellekle tasinabilir.
 - Arayuz 1024×768 ekrana gore duzenlenmistir; sol paneller gerekirse kaydirilir.
 
+### 4b. Osiloskop darbe analizi (v2)
+
+Cihaz baglantisi **gerekmez**; osiloskoptan alinan CSV dosyasiyla calisir.
+Dosyayi USB bellekle XP'ye tasiyin.
+
+**Duzen:** Keithley 3390 kare dalga → UV lamba surucusu ve osiloskop **CH1**;
+fotodedektor → **Thorlabs AMP120** (akim → gerilim) → osiloskop **CH2**.
+
+1. **Osiloskop CSV dosyasi ac...** — Rigol DS1000Z/DS2000/DS3100/DS4000
+   bicimleri (`X,CH1,CH2` + birim satiri veya `Start/Increment`) ve
+   `Time(s),CH1(V)` gibi basliklar okunur; mV/us birimleri SI'ya cevrilir.
+2. **Kanallar:** sinyal = CH2 (AMP120), referans = CH1 (lamba surusu).
+   Referans kaydedilmediyse "(yok - sinyalin kendisi)" secilir.
+3. **Yukseltec:** AMP120 kazanci **1e5 V/A**. Osiloskop girisi **50 ohm** ise
+   kutucugu isaretleyin (AMP120'nin 50 ohm cikis direnci yuzunden etkin kazanc
+   yariya iner). CH2 **AC kuplajli** ise (ekranda `CH2 ~`) "DC kuplajli"
+   kutucugunu bos birakin: fotoakim genlikten (dV) hesaplanir.
+4. **Isik ve dedektor:** dalga boyu, **dedektore dusen** optik guc, aktif alan;
+   istege bagli olarak Keithley I-V olcumunden karanlik akim (shot-gurultu D*).
+5. Dosya acilinca analiz otomatik yapilir; ayar degistirince **Analiz et**.
+
+**Gosterimler:** dalga formu (V veya uA; mor alanlar lamba acik), ortalama
+kenarlar (normalize, %10/%90 cizgili), ortalama darbe (bir periyot), tek tek
+kenar sureleri.
+
+**Cikti:** rapor (.txt — `Parametre / Deger / Birim`, deger kolonu **SI
+biriminde saf sayi**: s, V, A, W), kenar tablosu (.csv), ortalama dalga (.csv),
+grafik (.eps), tabloyu panoya kopyala.
+
+**Hesaplananlar:** periyot, frekans, doluluk; **yukselme/dusme %10-%90**
+(kenarlar sinyalin kendi %50 noktasina hizalanarak cevrim ortalamasi alinir +
+tek tek kenarlarin ort./std); tek ve cift ustel zaman sabitleri (cift ustel
+yalnizca istatistiksel olarak anlamliysa — F testi); lamba → sinyal gecikmesi;
+V_on/V_off, fotoakim `I_ph = |dV| / G`, duyarlilik `R = I_ph / P`, EQE;
+gurultu (tam bant ve **B icinde**, varsayilan B = 100 kHz = AMP120 bandi),
+SNR, NEP, D*; ayrica osiloskobun Measure menusunun karsiliklari (Vpp, Vtop,
+Vbase, Vamp, Vavg, Vrms).
+
+**Dikkat:**
+- AMP120'nin yukselme suresi ~**3.5 us** (100 kHz). Bu deger "Sistem yukselme
+  suresi" alaninda girilidir ve `sqrt(t_olc^2 - t_sis^2)` ile cikarilir.
+  Olculen sure buna yakinsa program uyarir: dedektor daha hizli olabilir.
+- Bazi osiloskoplarda ardisik ornekler arasinda sabit fark olur (araya-girmeli
+  ADC); otomatik bulunur, cikarilir ve raporda yazilir.
+- Kenar suresini hassas olcmek icin osiloskopta zaman olcegini kucultup kenari
+  buyutun (yukselme suresi en az ~10 ornek icermeli). Gurultu yuksekse
+  osiloskopta **Average** modu veya "Yumusatma" ayarini 3-5 kullanin.
+
 ### Hesaplanan buyuklukler
 
 | Buyukluk | Baginti |
@@ -186,6 +248,7 @@ uvpd_xp/
   simulator.py           cihazsiz test icin sahte SMU
   measurement.py         I-V taramasi ve zaman tepkisi
   analysis.py            karsilastirma, R/EQE/D*, rise/fall (saf Python)
+  scope.py               (v2) osiloskop CSV okuma ve darbe analizi (saf Python)
   dataset.py             CSV okuma/yazma (modern surumle ayni bicim)
   diag.py                surucu teshisi
   console.py             XP konsolunda guvenli yazdirma
@@ -193,15 +256,17 @@ uvpd_xp/
   gui/                   Tkinter arayuzu
 config/wiring.json       kablolama haritasi
 docs/hardware_setup.md   donanim kurulumu
-tests/                   66 test (unittest; harici paket gerekmez)
+tests/                   84 test (unittest; harici paket gerekmez)
+  data/                  ornek Rigol DS3100 kaydi (test verisi)
 ```
 
 ### Dogrulama
 
 Kod, XP'deki Python 3.4.4 ile ayni dil surumu olan **Python 3.4.10** ile
-derlenip Tk 8.6 arayuzuyle test edilmistir (66 test; gercek Tk penceresinde
+derlenip Tk 8.6 arayuzuyle test edilmistir (84 test; gercek Tk penceresinde
 ikili olcum, karsilastirma, zaman tepkisi ve acil durdurma dahil). GPIB ve
 VISA katmani, gercek DLL'lerin fonksiyon imzalarini taklit eden sahte
-suruculerle test edilmistir. **Gercek bir XP bilgisayarinda henuz
-calistirilmamistir** — ilk kullanimda `teshis.bat` ve `test-baglanti.bat`
-ciktilarini kontrol edin.
+suruculerle test edilmistir. XP v1 laboratuvardaki XP bilgisayarinda
+calistirilip dogrulanmistir. **v2'deki 5. sekme henuz gercek XP'de
+denenmemistir**; analiz sonuclari modern (numpy) surumle ayni dosyada 5 anlamli
+basamaga kadar ayni cikar (bu da bir testle denetlenir).
